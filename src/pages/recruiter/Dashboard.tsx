@@ -3,11 +3,19 @@ import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard, PlusCircle, Briefcase, Users, Building2,
-  BarChart3, Settings, LogOut, Menu, X,
+  BarChart3, Settings, LogOut, Menu, X, MessageSquare, Bell,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import Navbar from "@/components/layout/Navbar";
+import PostJob from "@/features/jobs/PostJob";
+import ManageJobs from "@/features/jobs/ManageJobs";
+import ApplicantManagement from "@/features/applications/ApplicantManagement";
+import CompanyProfile from "@/features/profile/CompanyProfile";
+import RecruiterAnalytics from "@/features/analytics/RecruiterAnalytics";
+import ChatPage from "@/features/chat/ChatPage";
+import NotificationsPage from "@/features/notifications/NotificationsPage";
+import SettingsPage from "@/features/settings/SettingsPage";
 import { useState } from "react";
 
 const sidebarLinks = [
@@ -17,6 +25,8 @@ const sidebarLinks = [
   { label: "Applicants", href: "/recruiter/applicants", icon: Users },
   { label: "Company Profile", href: "/recruiter/company", icon: Building2 },
   { label: "Analytics", href: "/recruiter/analytics", icon: BarChart3 },
+  { label: "Messages", href: "/recruiter/chat", icon: MessageSquare },
+  { label: "Notifications", href: "/recruiter/notifications", icon: Bell },
   { label: "Settings", href: "/recruiter/settings", icon: Settings },
 ];
 
@@ -54,15 +64,6 @@ const DashboardHome = () => {
   );
 };
 
-const PlaceholderPage = ({ title }: { title: string }) => (
-  <div className="flex min-h-[400px] items-center justify-center">
-    <div className="text-center">
-      <h2 className="font-display text-xl font-bold">{title}</h2>
-      <p className="text-muted-foreground">This section is coming soon</p>
-    </div>
-  </div>
-);
-
 const RecruiterDashboard = () => {
   const { logout } = useAuth();
   const location = useLocation();
@@ -75,18 +76,11 @@ const RecruiterDashboard = () => {
         <Button variant="ghost" size="icon" className="fixed bottom-4 right-4 z-50 h-12 w-12 rounded-full shadow-lg gradient-primary border-0 md:hidden" onClick={() => setSidebarOpen(!sidebarOpen)}>
           {sidebarOpen ? <X className="h-5 w-5 text-primary-foreground" /> : <Menu className="h-5 w-5 text-primary-foreground" />}
         </Button>
-
         <aside className={`fixed inset-y-0 left-0 z-40 w-64 transform border-r border-border bg-card pt-16 transition-transform md:sticky md:top-16 md:h-[calc(100vh-4rem)] md:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
-          <nav className="space-y-1 p-4">
+          <nav className="space-y-1 p-4 overflow-y-auto h-full">
             {sidebarLinks.map((link) => (
-              <Link
-                key={link.href}
-                to={link.href}
-                onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                  location.pathname === link.href ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary"
-                }`}
-              >
+              <Link key={link.href} to={link.href} onClick={() => setSidebarOpen(false)}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${location.pathname === link.href ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary"}`}>
                 <link.icon className="h-4 w-4" /> {link.label}
               </Link>
             ))}
@@ -95,19 +89,19 @@ const RecruiterDashboard = () => {
             </button>
           </nav>
         </aside>
-
         {sidebarOpen && <div className="fixed inset-0 z-30 bg-background/50 md:hidden" onClick={() => setSidebarOpen(false)} />}
-
         <main className="flex-1 p-6 md:p-8">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <Routes>
               <Route path="dashboard" element={<DashboardHome />} />
-              <Route path="post-job" element={<PlaceholderPage title="Post a Job" />} />
-              <Route path="jobs" element={<PlaceholderPage title="Manage Jobs" />} />
-              <Route path="applicants" element={<PlaceholderPage title="Applicant Management" />} />
-              <Route path="company" element={<PlaceholderPage title="Company Profile" />} />
-              <Route path="analytics" element={<PlaceholderPage title="Analytics" />} />
-              <Route path="settings" element={<PlaceholderPage title="Settings" />} />
+              <Route path="post-job" element={<PostJob />} />
+              <Route path="jobs" element={<ManageJobs />} />
+              <Route path="applicants" element={<ApplicantManagement />} />
+              <Route path="company" element={<CompanyProfile />} />
+              <Route path="analytics" element={<RecruiterAnalytics />} />
+              <Route path="chat" element={<ChatPage />} />
+              <Route path="notifications" element={<NotificationsPage />} />
+              <Route path="settings" element={<SettingsPage />} />
               <Route path="*" element={<DashboardHome />} />
             </Routes>
           </motion.div>
