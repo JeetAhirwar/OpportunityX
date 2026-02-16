@@ -19,7 +19,8 @@ import JobAlerts from "@/features/jobs/JobAlerts";
 import ChatPage from "@/features/chat/ChatPage";
 import NotificationsPage from "@/features/notifications/NotificationsPage";
 import SettingsPage from "@/features/settings/SettingsPage";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import OnboardingModal from "@/features/onboarding/OnboardingModal";
 
 const sidebarLinks = [
   { label: "Dashboard", href: "/candidate/dashboard", icon: LayoutDashboard },
@@ -107,8 +108,16 @@ const CandidateDashboard = () => {
   const { logout } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  useEffect(() => {
+    const completed = localStorage.getItem("ox_onboarding_complete");
+    if (!completed) setShowOnboarding(true);
+  }, []);
 
   return (
+    <>
+      <OnboardingModal open={showOnboarding} onComplete={() => setShowOnboarding(false)} />
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="flex">
@@ -148,6 +157,7 @@ const CandidateDashboard = () => {
         </main>
       </div>
     </div>
+    </>
   );
 };
 
