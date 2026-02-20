@@ -1,20 +1,31 @@
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  MapPin, DollarSign, Clock, Building2, Briefcase, BookmarkPlus,
+  MapPin, DollarSign, Clock, Building2, Briefcase, BookmarkPlus, Bookmark,
   Share2, ArrowLeft, CheckCircle2, Globe, Users, Calendar,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
+} from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 
 const JobDetail = () => {
   const { id } = useParams();
+  const { toast } = useToast();
+  const [applied, setApplied] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [coverLetter, setCoverLetter] = useState("");
+  const [applying, setApplying] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
-  // Mock data
   const job = {
     id,
     title: "Senior React Developer",
@@ -27,9 +38,7 @@ const JobDetail = () => {
     posted: "3 days ago",
     logo: "TC",
     applicants: 47,
-    description: `We're looking for a Senior React Developer to join our growing frontend team. You'll be building next-generation web applications that serve millions of users worldwide.
-
-As a senior member of the team, you'll mentor junior developers, contribute to architecture decisions, and drive best practices across the organization.`,
+    description: `We're looking for a Senior React Developer to join our growing frontend team. You'll be building next-generation web applications that serve millions of users worldwide.\n\nAs a senior member of the team, you'll mentor junior developers, contribute to architecture decisions, and drive best practices across the organization.`,
     responsibilities: [
       "Lead development of complex React applications",
       "Design and implement scalable frontend architectures",
@@ -57,25 +66,37 @@ As a senior member of the team, you'll mentor junior developers, contribute to a
     },
   };
 
+  const handleApply = async () => {
+    setApplying(true);
+    // API: api.post(`/jobs/${id}/apply`, { coverLetter })
+    await new Promise((r) => setTimeout(r, 1000));
+    setApplied(true);
+    setApplying(false);
+    setDialogOpen(false);
+    toast({ title: "Application Submitted!", description: `You've applied to ${job.title} at ${job.company}` });
+  };
+
+  const handleSave = () => {
+    // API: api.post(`/candidate/saved-jobs/${id}`)
+    setSaved(!saved);
+    toast({ title: saved ? "Removed from saved" : "Job saved!", description: saved ? "Job removed from your saved list" : "You can find it in your saved jobs" });
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-
       <div className="container mx-auto px-4 py-8">
         <Button variant="ghost" size="sm" className="mb-6" asChild>
           <Link to="/jobs"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Jobs</Link>
         </Button>
 
         <div className="grid gap-8 lg:grid-cols-3">
-          {/* Main content */}
           <div className="lg:col-span-2 space-y-6">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
               <Card>
                 <CardContent className="p-6 md:p-8">
                   <div className="flex items-start gap-4">
-                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary/10 font-display text-lg font-bold text-primary">
-                      {job.logo}
-                    </div>
+                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary/10 font-display text-lg font-bold text-primary">{job.logo}</div>
                     <div className="flex-1">
                       <h1 className="font-display text-2xl font-bold md:text-3xl">{job.title}</h1>
                       <p className="mt-1 text-lg text-muted-foreground">{job.company}</p>
@@ -99,8 +120,42 @@ As a senior member of the team, you'll mentor junior developers, contribute to a
                   </div>
 
                   <div className="mt-6 flex flex-wrap gap-3">
-                    <Button className="gradient-primary border-0">Apply Now</Button>
-                    <Button variant="outline"><BookmarkPlus className="mr-2 h-4 w-4" /> Save</Button>
+                    {applied ? (
+                      <Button disabled className="bg-success text-success-foreground">
+                        <CheckCircle2 className="mr-2 h-4 w-4" /> Applied
+                      </Button>
+                    ) : (
+                      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                        <DialogTrigger asChild>
+                          <Button className="gradient-primary border-0">Apply Now</Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Apply to {job.title}</DialogTitle>
+                            <DialogDescription>at {job.company} · {job.location}</DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-3">
+                            <p className="text-sm text-muted-foreground">Your profile and resume will be shared with the recruiter.</p>
+                            <Textarea
+                              placeholder="Cover letter (optional) — Tell the recruiter why you're a great fit..."
+                              value={coverLetter}
+                              onChange={(e) => setCoverLetter(e.target.value)}
+                              rows={5}
+                            />
+                          </div>
+                          <DialogFooter>
+                            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+                            <Button onClick={handleApply} disabled={applying} className="gradient-primary border-0">
+                              {applying ? "Submitting..." : "Submit Application"}
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                    )}
+                    <Button variant="outline" onClick={handleSave}>
+                      {saved ? <Bookmark className="mr-2 h-4 w-4 fill-current" /> : <BookmarkPlus className="mr-2 h-4 w-4" />}
+                      {saved ? "Saved" : "Save"}
+                    </Button>
                     <Button variant="outline"><Share2 className="mr-2 h-4 w-4" /> Share</Button>
                   </div>
                 </CardContent>
@@ -118,9 +173,7 @@ As a senior member of the team, you'll mentor junior developers, contribute to a
                   <h2 className="font-display text-xl font-semibold mb-3">Responsibilities</h2>
                   <ul className="space-y-2">
                     {job.responsibilities.map((r) => (
-                      <li key={r} className="flex gap-2 text-sm text-muted-foreground">
-                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" /> {r}
-                      </li>
+                      <li key={r} className="flex gap-2 text-sm text-muted-foreground"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" /> {r}</li>
                     ))}
                   </ul>
                 </div>
@@ -129,9 +182,7 @@ As a senior member of the team, you'll mentor junior developers, contribute to a
                   <h2 className="font-display text-xl font-semibold mb-3">Requirements</h2>
                   <ul className="space-y-2">
                     {job.requirements.map((r) => (
-                      <li key={r} className="flex gap-2 text-sm text-muted-foreground">
-                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" /> {r}
-                      </li>
+                      <li key={r} className="flex gap-2 text-sm text-muted-foreground"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" /> {r}</li>
                     ))}
                   </ul>
                 </div>
@@ -140,9 +191,7 @@ As a senior member of the team, you'll mentor junior developers, contribute to a
                   <h2 className="font-display text-xl font-semibold mb-3">Benefits</h2>
                   <div className="grid gap-2 sm:grid-cols-2">
                     {job.benefits.map((b) => (
-                      <div key={b} className="flex items-center gap-2 rounded-lg bg-secondary p-3 text-sm">
-                        <CheckCircle2 className="h-4 w-4 text-success" /> {b}
-                      </div>
+                      <div key={b} className="flex items-center gap-2 rounded-lg bg-secondary p-3 text-sm"><CheckCircle2 className="h-4 w-4 text-success" /> {b}</div>
                     ))}
                   </div>
                 </div>
@@ -150,7 +199,6 @@ As a senior member of the team, you'll mentor junior developers, contribute to a
             </Card>
           </div>
 
-          {/* Sidebar */}
           <div className="space-y-6">
             <Card>
               <CardContent className="p-6">
@@ -171,7 +219,6 @@ As a senior member of the team, you'll mentor junior developers, contribute to a
                 </div>
               </CardContent>
             </Card>
-
             <Card>
               <CardContent className="p-6 text-center">
                 <Users className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
@@ -179,18 +226,20 @@ As a senior member of the team, you'll mentor junior developers, contribute to a
                 <p className="text-sm text-muted-foreground">applicants so far</p>
               </CardContent>
             </Card>
-
             <Card className="gradient-primary">
               <CardContent className="p-6 text-center">
                 <h3 className="mb-2 font-display font-semibold text-primary-foreground">Ready to apply?</h3>
                 <p className="mb-4 text-sm text-primary-foreground/70">Submit your application now</p>
-                <Button variant="secondary" className="w-full">Apply Now</Button>
+                {applied ? (
+                  <Button variant="secondary" className="w-full" disabled><CheckCircle2 className="mr-2 h-4 w-4" /> Applied</Button>
+                ) : (
+                  <Button variant="secondary" className="w-full" onClick={() => setDialogOpen(true)}>Apply Now</Button>
+                )}
               </CardContent>
             </Card>
           </div>
         </div>
       </div>
-
       <Footer />
     </div>
   );

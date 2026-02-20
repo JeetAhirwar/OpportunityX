@@ -15,6 +15,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import OTPVerification from "./pages/OTPVerification";
 import Jobs from "./pages/Jobs";
 import JobDetail from "./pages/JobDetail";
+import PublicProfile from "./pages/PublicProfile";
 import CandidateDashboard from "./pages/candidate/Dashboard";
 import RecruiterDashboard from "./pages/recruiter/Dashboard";
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -38,6 +39,7 @@ const App = () => (
               <Route path="/verify-otp" element={<OTPVerification />} />
               <Route path="/jobs" element={<Jobs />} />
               <Route path="/jobs/:id" element={<JobDetail />} />
+              <Route path="/profile/:username" element={<PublicProfile />} />
 
               {/* Candidate */}
               <Route path="/candidate/*" element={
