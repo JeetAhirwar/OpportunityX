@@ -1,109 +1,150 @@
 
 
-# OpportunityX — Complete Job Portal Frontend
+# OpportunityX -- Enhanced Job Portal Implementation
 
-## Overview
-A fully responsive, modern job portal frontend built with React + Vite + Tailwind CSS. All pages and components will be built with a centralized API service layer for connecting to your custom Node.js backend. Dark/light mode, glassmorphism accents, smooth animations, and mobile-first design throughout.
-
-## Design System
-- **Color palette**: Professional blues/indigos with accent colors for status indicators
-- **Dark/light mode** toggle with system preference detection
-- **Glassmorphism** cards and panels with backdrop blur effects
-- **Typography**: Clean, accessible font sizing with proper hierarchy
-- **Animations**: Framer-motion-style transitions on page loads, modals, and interactions
-- **Fully responsive**: Mobile-first with breakpoints for tablet and desktop
-
-## API Service Layer
-- Centralized API client with interceptors for JWT token handling
-- Request/response error handling with toast notifications
-- Role-based route guards (Candidate, Recruiter, Admin)
-- Environment-based API URL configuration
+## Summary
+Upgrade the existing frontend with enhanced Profile Builder (photo, professional title, Fresher/Experienced toggle, certifications), a public profile page, improved application tracking with withdraw support, job search pagination, and API-ready architecture throughout.
 
 ---
 
-## Pages & Features
+## Changes
 
-### 1. Landing Page
-- Hero section with search bar (job title + location)
-- Featured jobs carousel
-- Statistics section (jobs posted, companies, candidates)
-- Testimonials, how-it-works section
-- CTA for sign up
-- Footer with links
+### 1. Enhanced Profile Builder
+**File: `src/features/profile/ProfileBuilder.tsx`** (major rewrite)
 
-### 2. Authentication
-- **Login** page with email/password
-- **Register** page with role selection (Candidate/Recruiter)
-- **Forgot Password** flow
-- **OTP verification** page
-- JWT token storage and auto-refresh logic
-- Protected route wrapper component
+- Add **profile photo** upload with avatar preview (circular crop area)
+- Add **Professional Title** field (e.g. "Full Stack Developer")
+- Add **Candidate Type** selector: Fresher / Experienced
+  - When "Fresher" is selected: Experience section is hidden/disabled with a subtle message
+  - When "Experienced" is selected: Experience section becomes required with validation
+- Add **Certifications** section (name, issuer, year, credential URL)
+- Update profile completeness calculation to include new fields
+- Use the centralized `api` client instead of raw `fetch` for the save call
+- Add per-field error display (red border + message under each input)
+- Add loading skeleton while fetching existing profile from API
 
-### 3. Candidate Dashboard
-- **Profile Builder**: Personal info, education, experience, skills tags, portfolio links
-- **Resume Upload**: Drag-and-drop file upload with preview
-- **Applied Jobs**: List with application status timeline (Applied → Reviewed → Shortlisted → Interview → Offer/Rejected)
-- **Saved/Bookmarked Jobs**: Quick access list
-- **Job Alerts**: Preferences for email notifications
-- **Recommended Jobs**: AI-powered suggestions section (calls your backend AI endpoint)
+### 2. Public Profile Page
+**New file: `src/pages/PublicProfile.tsx`**
 
-### 4. Recruiter Dashboard
-- **Post Job**: Rich form with job details, requirements, salary range, job type, remote options
-- **Manage Jobs**: Edit, delete, toggle active/inactive
-- **Applicant Management**: View applicants per job, filter, shortlist/reject with notes
-- **Company Profile**: Logo, description, culture, benefits, social links
-- **Analytics**: Views, applications, conversion charts per job posting
+A read-only profile view at `/profile/:username` styled like LinkedIn/Naukri:
+- Banner area with gradient background
+- Profile photo, name, professional title, location
+- Skills displayed as badges
+- Education and Experience as timeline cards
+- Projects as cards with links
+- Certifications section
+- Resume download button (if public)
+- Social links (LinkedIn, GitHub, Portfolio)
+- Uses `api.get("/profile/:username")` for data
 
-### 5. Admin Panel
-- **User Management**: List, search, activate/deactivate users by role
-- **Job Moderation**: Approve/reject/flag job postings
-- **Analytics Dashboard**: Charts for users, jobs, applications over time (using Recharts)
-- **Reports**: Exportable data tables
+**Update: `src/App.tsx`** -- Add route `/profile/:username`
 
-### 6. Job Search & Listings
-- **Advanced Search**: Full-text search with filters — location, salary range, experience level, job type (full-time/part-time/contract), remote/hybrid/onsite, industry, date posted
-- **Job Cards**: Clean card layout with key info, save button, apply button
-- **Job Detail Page**: Full description, company info, similar jobs, apply CTA
-- **Map view** option for location-based search
+### 3. Enhanced My Applications
+**File: `src/features/applications/MyApplications.tsx`** (update)
 
-### 7. Chat System
-- Real-time messaging UI between recruiter and candidate
-- Conversation list sidebar
-- Message input with basic formatting
-- Unread message indicators
-- (Connects to your backend WebSocket/polling endpoint)
+- Add **Withdraw Application** button with confirmation dialog
+- Add application **status timeline** (visual stepper: Applied > Reviewed > Shortlisted > Interview > Offer)
+- Add expandable row to show job details and timeline
+- Add pagination (10 per page)
+- Wire up to `api.get("/candidate/applications")` and `api.patch` for withdraw
 
-### 8. Notifications
-- Notification bell with dropdown
-- Notification center page with filters (all, unread, by type)
-- Types: application updates, new messages, job alerts, system notices
+### 4. Job Search Enhancements
+**File: `src/pages/Jobs.tsx`** (update)
 
-### 9. Resume Parsing
-- Upload resume UI with drag-and-drop
-- Parsed data preview (calls your backend parsing endpoint)
-- Auto-fill profile fields from parsed data
+- Add **pagination** component (page numbers + next/prev)
+- Make filters functional (currently decorative checkboxes)
+- Add **sorting** that actually filters the list
+- Wire search to `api.get("/jobs", { params })` with query string
 
-### 10. Payment / Premium
-- Premium listing upgrade page for recruiters
-- Pricing cards for plans
-- Payment form UI (connects to your backend payment endpoint)
-- Subscription management section
+### 5. Job Detail -- Apply Flow
+**File: `src/pages/JobDetail.tsx`** (update)
 
-### 11. Blog / Career Resources
-- Blog listing page with categories
-- Individual blog post page
-- Career tips, interview guides, salary calculator tool
+- "Apply Now" button opens a confirmation dialog
+- Shows cover letter textarea (optional)
+- On submit, calls `api.post("/jobs/:id/apply")`
+- After applying, button changes to "Applied" (disabled, green)
+- "Save" button toggles bookmark state via API
 
-### 12. Shared Components
-- Responsive navbar with role-based menu items
-- Sidebar navigation for dashboards
-- Footer
-- Loading skeletons
-- Empty states
-- Error boundaries
-- Toast notification system
-- Confirmation dialogs
-- Data tables with sorting/pagination
-- File upload component
-- Rich text display
+### 6. Recruiter -- Applicant Resume Download
+**File: `src/features/applications/ApplicantManagement.tsx`** (update)
+
+- Add **Download Resume** button per applicant
+- Add candidate profile preview in the drawer showing full profile data
+- Add notes textarea that persists per candidate
+
+### 7. Type Definitions
+**New file: `src/types/index.ts`**
+
+Centralized TypeScript interfaces for all entities:
+- `Profile`, `Job`, `Application`, `User`, `Certification`, `Notification`, `Message`
+- Shared across all features for type safety
+
+---
+
+## Technical Details
+
+### Candidate Type Logic (Fresher/Experienced)
+```text
+candidateType === "fresher"
+  -> Experience card shows disabled overlay with message: "Experience section is not required for freshers"
+  -> Experience array is cleared on save
+  -> Validation skips experience
+
+candidateType === "experienced"
+  -> Experience section is fully enabled
+  -> At least one experience entry is required
+  -> Validation enforces company + role + duration
+```
+
+### Profile Completeness Recalculation
+```text
+Name: 8%  |  Phone: 8%  |  Location: 8%  |  Title: 8%
+Bio: 10%  |  Photo: 8%  |  Skills: 12%  |  Education: 10%
+Experience (if experienced): 12%  |  Projects: 8%
+Certifications: 4%  |  Socials: 4%
+```
+
+### API Endpoints Referenced
+All calls go through the centralized `api` client (`src/lib/api.ts`). The backend endpoints expected:
+
+- `GET /candidate/profile` -- fetch saved profile
+- `PUT /candidate/profile` -- save/update profile
+- `POST /candidate/resume` -- upload resume (multipart)
+- `GET /profile/:username` -- public profile (no auth)
+- `GET /candidate/applications` -- list applications
+- `PATCH /candidate/applications/:id/withdraw` -- withdraw
+- `GET /jobs?page=&limit=&type=&location=&salary=&sort=` -- search
+- `POST /jobs/:id/apply` -- apply to job
+- `POST /candidate/saved-jobs/:id` -- bookmark toggle
+- `GET /recruiter/applicants/:id/resume` -- download resume
+
+### New Route Addition
+```text
+/profile/:username  ->  PublicProfile (public, no auth required)
+```
+
+### File Structure After Changes
+```text
+src/
+  types/
+    index.ts                    (NEW)
+  features/
+    profile/
+      ProfileBuilder.tsx        (ENHANCED)
+      ResumeUpload.tsx          (existing)
+      CompanyProfile.tsx        (existing)
+    applications/
+      MyApplications.tsx        (ENHANCED)
+      ApplicantManagement.tsx   (ENHANCED)
+    jobs/
+      PostJob.tsx               (existing)
+      ManageJobs.tsx            (existing)
+      SavedJobs.tsx             (existing)
+      JobRecommendations.tsx    (existing)
+      JobAlerts.tsx             (existing)
+  pages/
+    PublicProfile.tsx           (NEW)
+    Jobs.tsx                    (ENHANCED)
+    JobDetail.tsx               (ENHANCED)
+```
 
