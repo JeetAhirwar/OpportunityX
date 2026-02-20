@@ -39,20 +39,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(false);
   }, []);
 
+  // const login = useCallback(async (email: string, password: string) => {
+  //   const data = await api.login(email, password);
+  //   setUser(data.user);
+  // }, []);
+
   const login = useCallback(async (email: string, password: string) => {
-    const data = await api.login(email, password);
-    setUser(data.user);
-  }, []);
+  const data = await api.login(email, password);
+
+  // 🔥 SAVE TOKEN HERE
+  localStorage.setItem("token", data.token);
+
+  // Optional: save user also
+  localStorage.setItem("ox_user", JSON.stringify(data.user));
+
+  setUser(data.user);
+}, []);
+
+  // const register = useCallback(async (payload: { name: string; email: string; password: string; role: string }) => {
+  //   const data = await api.register(payload);
+  //   setUser(data.user);
+  // }, []);
 
   const register = useCallback(async (payload: { name: string; email: string; password: string; role: string }) => {
-    const data = await api.register(payload);
-    setUser(data.user);
-  }, []);
+  const data = await api.register(payload);
 
-  const logout = useCallback(() => {
-    setUser(null);
-    api.logout();
-  }, []);
+  localStorage.setItem("token", data.token);
+  localStorage.setItem("ox_user", JSON.stringify(data.user));
+
+  setUser(data.user);
+}, []);
+
+  // const logout = useCallback(() => {
+  //   setUser(null);
+  //   api.logout();
+  // }, []);
+
+const logout = useCallback(() => {
+  setUser(null);
+  localStorage.removeItem("token");
+  localStorage.removeItem("ox_user");
+}, []);
 
   return (
     <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, register, logout, setUser }}>

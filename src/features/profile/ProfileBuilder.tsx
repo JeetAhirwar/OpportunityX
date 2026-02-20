@@ -1,6 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { User, GraduationCap, Building2, FolderOpen, Globe, Plus, X, Save } from "lucide-react";
+import {
+  User,
+  GraduationCap,
+  Building2,
+  FolderOpen,
+  Globe,
+  Plus,
+  X,
+  Save,
+  Code2,
+} from "lucide-react";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -18,13 +29,21 @@ interface ProfileData {
   bio: string;
   skills: string[];
   education: { school: string; degree: string; year: string }[];
-  experience: { company: string; role: string; duration: string; description: string }[];
+  experience: {
+    company: string;
+    role: string;
+    duration: string;
+    description: string;
+  }[];
   projects: { name: string; url: string; description: string }[];
   socials: { linkedin: string; github: string; portfolio: string };
 }
 
 const defaultProfile: ProfileData = {
-  name: "", phone: "", location: "", bio: "",
+  name: "",
+  phone: "",
+  location: "",
+  bio: "",
   skills: [],
   education: [],
   experience: [],
@@ -34,24 +53,69 @@ const defaultProfile: ProfileData = {
 
 const ProfileBuilder = () => {
   const { toast } = useToast();
-  const [profile, setProfile] = useState<ProfileData>(defaultProfile);
+  const [profile, setProfile] = useState<ProfileData>(() => {
+    const saved = localStorage.getItem("profileDraft");
+    return saved ? JSON.parse(saved) : defaultProfile;
+  });
+
   const [newSkill, setNewSkill] = useState("");
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState<any>({});
+
+  const phoneRegex = /^[6-9]\d{9}$/;
+  // const urlRegex = /^(https?:\/\/)?([\w\-])+\.{1}[a-zA-Z]{2,}(\/.*)?$/;
+
+  // Auto-save draft
+  useEffect(() => {
+    localStorage.setItem("profileDraft", JSON.stringify(profile));
+  }, [profile]);
+
+  const formatIndianNumber = (num: string) => {
+    const digits = num.replace(/\D/g, "").slice(0, 10);
+    if (digits.length <= 5) return digits;
+    return `${digits.slice(0, 5)} ${digits.slice(5)}`;
+  };
+
+  const validateProfile = () => {
+    const newErrors: any = {};
+
+    if (!profile.name.trim()) newErrors.name = "Full name required";
+    if (!phoneRegex.test(profile.phone.replace(/\D/g, "")))
+      newErrors.phone = "Invalid Indian number";
+    if (!profile.location.trim()) newErrors.location = "Location required";
+    if (profile.bio.trim().length < 20)
+      newErrors.bio = "Bio minimum 20 characters";
+    if (profile.skills.length === 0)
+      newErrors.skills = "Add at least one skill";
+
+    // if (
+    //   profile.socials.linkedin &&
+    //   !urlRegex.test(profile.socials.linkedin)
+    // )
+    //   newErrors.linkedin = "Invalid LinkedIn URL";
+
+    // if (profile.socials.github && !urlRegex.test(profile.socials.github))
+    //   newErrors.github = "Invalid GitHub URL";
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const completeness = (() => {
     let score = 0;
-    if (profile.name) score += 15;
-    if (profile.phone) score += 10;
+    if (profile.name) score += 10;
+    if (phoneRegex.test(profile.phone.replace(/\D/g, ""))) score += 10;
     if (profile.location) score += 10;
-    if (profile.bio) score += 15;
+    if (profile.bio.length >= 20) score += 15;
     if (profile.skills.length > 0) score += 15;
     if (profile.education.length > 0) score += 10;
     if (profile.experience.length > 0) score += 15;
-    if (profile.socials.linkedin || profile.socials.github) score += 10;
+    if (profile.projects.length > 0) score += 10;
+    if (profile.socials.linkedin || profile.socials.github) score += 5;
     return Math.min(score, 100);
   })();
 
-  const updateField = <K extends keyof ProfileData>(key: K, value: ProfileData[K]) =>
+  const updateField = (key: keyof ProfileData, value: any) =>
     setProfile((prev) => ({ ...prev, [key]: value }));
 
   const addSkill = () => {
@@ -61,149 +125,463 @@ const ProfileBuilder = () => {
     }
   };
 
-  const addEducation = () => updateField("education", [...profile.education, { school: "", degree: "", year: "" }]);
-  const addExperience = () => updateField("experience", [...profile.experience, { company: "", role: "", duration: "", description: "" }]);
-  const addProject = () => updateField("projects", [...profile.projects, { name: "", url: "", description: "" }]);
-
   const handleSave = async () => {
+    if (!validateProfile()) {
+      toast({
+        title: "Validation Error",
+        description: "Fix highlighted fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSaving(true);
-    // API call: api.put("/candidate/profile", profile)
-    await new Promise((r) => setTimeout(r, 800));
+
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("Login required");
+
+      const res = await fetch(
+        "http://localhost:5000/api/candidate/profile",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(profile),
+        }
+      );
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+
+      localStorage.removeItem("profileDraft");
+
+      toast({
+        title: "Profile Saved",
+        description: "Your biodata updated successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+
     setSaving(false);
-    toast({ title: "Profile saved", description: "Your profile has been updated successfully." });
   };
 
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-      <PageHeader title="Profile Builder" description="Complete your profile to stand out to recruiters" action={{ label: saving ? "Saving..." : "Save Profile", icon: Save, onClick: handleSave }} />
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="space-y-6"
+    >
+      <PageHeader
+        title="Profile Builder"
+        description="Complete your professional biodata"
+        action={{
+          label: saving ? "Saving..." : "Save Profile",
+          icon: Save,
+          onClick: handleSave,
+          disabled: saving,
+        }}
+      />
 
-      {/* Completion bar */}
       <Card>
         <CardContent className="p-5">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">Profile Completeness</span>
-            <span className="text-sm font-bold text-primary">{completeness}%</span>
+          <div className="flex justify-between mb-2">
+            <span>Profile Strength</span>
+            <span className="font-bold">{completeness}%</span>
           </div>
           <Progress value={completeness} />
-          {completeness < 100 && <p className="mt-2 text-xs text-muted-foreground">Complete all sections to maximize your visibility to recruiters</p>}
         </CardContent>
       </Card>
 
       {/* Basic Info */}
       <Card>
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2 text-lg"><User className="h-5 w-5 text-primary" /> Basic Information</CardTitle>
+        <CardHeader>
+          <CardTitle className="flex gap-2">
+            <User /> Basic Information
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div><Label>Full Name</Label><Input placeholder="John Doe" value={profile.name} onChange={(e) => updateField("name", e.target.value)} /></div>
-            <div><Label>Phone</Label><Input placeholder="+1 (555) 000-0000" value={profile.phone} onChange={(e) => updateField("phone", e.target.value)} /></div>
-          </div>
-          <div><Label>Location</Label><Input placeholder="San Francisco, CA" value={profile.location} onChange={(e) => updateField("location", e.target.value)} /></div>
-          <div><Label>Bio</Label><Textarea placeholder="A brief description about yourself, your career goals, and what you're looking for..." value={profile.bio} onChange={(e) => updateField("bio", e.target.value)} rows={4} /></div>
+
+          <Input
+            placeholder="Full Name"
+            value={profile.name}
+            onChange={(e) => updateField("name", e.target.value)}
+          />
+
+          <Input
+            placeholder="+91 98765 43210"
+            value={profile.phone}
+            onChange={(e) =>
+              updateField("phone", formatIndianNumber(e.target.value))
+            }
+          />
+
+          <Input
+            placeholder="City, State"
+            value={profile.location}
+            onChange={(e) => updateField("location", e.target.value)}
+          />
+
+          <Textarea
+            placeholder="Professional summary (career goal, expertise, achievements)"
+            value={profile.bio}
+            onChange={(e) => updateField("bio", e.target.value)}
+          />
+
         </CardContent>
       </Card>
+<Card>
+  <CardHeader>
+    <CardTitle className="flex items-center gap-2">
+      <Code2 className="h-5 w-5" />
+      Skills
+    </CardTitle>
+  </CardHeader>
 
-      {/* Skills */}
-      <Card>
-        <CardHeader className="pb-4">
-          <CardTitle className="text-lg">Skills</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2 mb-3">
-            {profile.skills.map((skill) => (
-              <Badge key={skill} variant="secondary" className="gap-1 pr-1">
-                {skill}
-                <button onClick={() => updateField("skills", profile.skills.filter((s) => s !== skill))} className="ml-1 rounded-full p-0.5 hover:bg-destructive/20"><X className="h-3 w-3" /></button>
-              </Badge>
-            ))}
-          </div>
+  <CardContent>
+    {errors.skills && (
+      <p className="text-xs text-red-500 mb-2">
+        {errors.skills}
+      </p>
+    )}
+
+    <div className="flex flex-wrap gap-2 mb-3">
+      {profile.skills.map((skill) => (
+        <Badge key={skill} variant="secondary" className="gap-1">
+          {skill}
+          <X
+            className="h-3 w-3 cursor-pointer"
+            onClick={() =>
+              updateField(
+                "skills",
+                profile.skills.filter((s) => s !== skill)
+              )
+            }
+          />
+        </Badge>
+      ))}
+    </div>
+
+    <div className="flex gap-2">
+      <Input
+        placeholder="React, Node.js, MongoDB"
+        value={newSkill}
+        onChange={(e) => setNewSkill(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && addSkill()}
+      />
+      <Button onClick={addSkill} variant="outline">
+        <Plus className="h-4 w-4" />
+      </Button>
+    </div>
+  </CardContent>
+</Card>
+<Card>
+  <CardHeader className="flex flex-row justify-between items-center">
+    <CardTitle className="flex gap-2 items-center">
+      <GraduationCap className="h-5 w-5" /> Education
+    </CardTitle>
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() =>
+        updateField("education", [
+          ...profile.education,
+          { school: "", degree: "", year: "" },
+        ])
+      }
+    >
+      <Plus className="h-4 w-4 mr-1" /> Add
+    </Button>
+  </CardHeader>
+
+  <CardContent className="space-y-4">
+    {errors.education && (
+      <p className="text-xs text-red-500 mb-2">
+        {errors.education}
+      </p>
+    )}
+    {profile.education.length === 0 && (
+      <p className="text-sm text-muted-foreground">
+        No education added yet
+      </p>
+    )}
+
+    {profile.education.map((edu, i) => (
+      <div
+        key={i}
+        className="grid gap-3 rounded-lg border p-4 sm:grid-cols-3"
+      >
+        <Input
+          placeholder="School / University"
+          value={edu.school}
+          onChange={(e) => {
+            const updated = [...profile.education];
+            updated[i].school = e.target.value;
+            updateField("education", updated);
+          }}
+        />
+
+        <Input
+          placeholder="Degree"
+          value={edu.degree}
+          onChange={(e) => {
+            const updated = [...profile.education];
+            updated[i].degree = e.target.value;
+            updateField("education", updated);
+          }}
+        />
+
+        <div className="flex gap-2">
+          <Input
+            placeholder="Year (2022)"
+            value={edu.year}
+            onChange={(e) => {
+              const updated = [...profile.education];
+              updated[i].year = e.target.value;
+              updateField("education", updated);
+            }}
+          />
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() =>
+              updateField(
+                "education",
+                profile.education.filter((_, index) => index !== i)
+              )
+            }
+            className="text-destructive"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    ))}
+  </CardContent>
+</Card>
+<Card>
+  <CardHeader className="flex flex-row justify-between items-center">
+    <CardTitle className="flex gap-2 items-center">
+      <Building2 className="h-5 w-5" /> Experience
+    </CardTitle>
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() =>
+        updateField("experience", [
+          ...profile.experience,
+          { company: "", role: "", duration: "", description: "" },
+        ])
+      }
+    >
+      <Plus className="h-4 w-4 mr-1" /> Add
+    </Button>
+  </CardHeader>
+
+  <CardContent className="space-y-4">
+    {profile.experience.length === 0 && (
+      <p className="text-sm text-muted-foreground">
+        No experience added yet
+      </p>
+    )}
+
+    {profile.experience.map((exp, i) => (
+      <div key={i} className="space-y-3 rounded-lg border p-4">
+
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Input
+            placeholder="Company"
+            value={exp.company}
+            onChange={(e) => {
+              const updated = [...profile.experience];
+              updated[i].company = e.target.value;
+              updateField("experience", updated);
+            }}
+          />
+
+          <Input
+            placeholder="Role"
+            value={exp.role}
+            onChange={(e) => {
+              const updated = [...profile.experience];
+              updated[i].role = e.target.value;
+              updateField("experience", updated);
+            }}
+          />
+
           <div className="flex gap-2">
-            <Input placeholder="Add a skill (e.g. React, Python)" value={newSkill} onChange={(e) => setNewSkill(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addSkill()} />
-            <Button variant="outline" onClick={addSkill}><Plus className="h-4 w-4" /></Button>
+            <Input
+              placeholder="Duration (Jan 2023 - Dec 2024)"
+              value={exp.duration}
+              onChange={(e) => {
+                const updated = [...profile.experience];
+                updated[i].duration = e.target.value;
+                updateField("experience", updated);
+              }}
+            />
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() =>
+                updateField(
+                  "experience",
+                  profile.experience.filter((_, index) => index !== i)
+                )
+              }
+              className="text-destructive"
+            >
+              <X className="h-4 w-4" />
+            </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Education */}
-      <Card>
-        <CardHeader className="pb-4 flex-row items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-lg"><GraduationCap className="h-5 w-5 text-primary" /> Education</CardTitle>
-          <Button variant="outline" size="sm" onClick={addEducation}><Plus className="mr-1 h-4 w-4" /> Add</Button>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {profile.education.length === 0 && <p className="text-sm text-muted-foreground">No education added yet</p>}
-          {profile.education.map((edu, i) => (
-            <div key={i} className="grid gap-3 rounded-lg border border-border p-4 sm:grid-cols-3">
-              <Input placeholder="School / University" value={edu.school} onChange={(e) => { const ed = [...profile.education]; ed[i] = { ...ed[i], school: e.target.value }; updateField("education", ed); }} />
-              <Input placeholder="Degree / Field" value={edu.degree} onChange={(e) => { const ed = [...profile.education]; ed[i] = { ...ed[i], degree: e.target.value }; updateField("education", ed); }} />
-              <div className="flex gap-2">
-                <Input placeholder="Year" value={edu.year} onChange={(e) => { const ed = [...profile.education]; ed[i] = { ...ed[i], year: e.target.value }; updateField("education", ed); }} />
-                <Button variant="ghost" size="icon" onClick={() => updateField("education", profile.education.filter((_, j) => j !== i))} className="text-destructive shrink-0"><X className="h-4 w-4" /></Button>
-              </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+        <Textarea
+          placeholder="Describe your achievements and responsibilities"
+          value={exp.description}
+          onChange={(e) => {
+            const updated = [...profile.experience];
+            updated[i].description = e.target.value;
+            updateField("experience", updated);
+          }}
+        />
+      </div>
+    ))}
+  </CardContent>
+</Card>
+<Card>
+  <CardHeader className="flex flex-row justify-between items-center">
+    <CardTitle className="flex gap-2 items-center">
+      <FolderOpen className="h-5 w-5" /> Projects
+    </CardTitle>
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() =>
+        updateField("projects", [
+          ...profile.projects,
+          { name: "", url: "", description: "" },
+        ])
+      }
+    >
+      <Plus className="h-4 w-4 mr-1" /> Add
+    </Button>
+  </CardHeader>
 
-      {/* Experience */}
-      <Card>
-        <CardHeader className="pb-4 flex-row items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-lg"><Building2 className="h-5 w-5 text-primary" /> Experience</CardTitle>
-          <Button variant="outline" size="sm" onClick={addExperience}><Plus className="mr-1 h-4 w-4" /> Add</Button>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {profile.experience.length === 0 && <p className="text-sm text-muted-foreground">No experience added yet</p>}
-          {profile.experience.map((exp, i) => (
-            <div key={i} className="space-y-3 rounded-lg border border-border p-4">
-              <div className="grid gap-3 sm:grid-cols-3">
-                <Input placeholder="Company" value={exp.company} onChange={(e) => { const ex = [...profile.experience]; ex[i] = { ...ex[i], company: e.target.value }; updateField("experience", ex); }} />
-                <Input placeholder="Role / Title" value={exp.role} onChange={(e) => { const ex = [...profile.experience]; ex[i] = { ...ex[i], role: e.target.value }; updateField("experience", ex); }} />
-                <div className="flex gap-2">
-                  <Input placeholder="Duration" value={exp.duration} onChange={(e) => { const ex = [...profile.experience]; ex[i] = { ...ex[i], duration: e.target.value }; updateField("experience", ex); }} />
-                  <Button variant="ghost" size="icon" onClick={() => updateField("experience", profile.experience.filter((_, j) => j !== i))} className="text-destructive shrink-0"><X className="h-4 w-4" /></Button>
-                </div>
-              </div>
-              <Textarea placeholder="Describe your responsibilities and achievements..." value={exp.description} onChange={(e) => { const ex = [...profile.experience]; ex[i] = { ...ex[i], description: e.target.value }; updateField("experience", ex); }} rows={2} />
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+  <CardContent className="space-y-4">
+    {profile.projects.length === 0 && (
+      <p className="text-sm text-muted-foreground">
+        No projects added yet
+      </p>
+    )}
 
-      {/* Projects */}
-      <Card>
-        <CardHeader className="pb-4 flex-row items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-lg"><FolderOpen className="h-5 w-5 text-primary" /> Projects</CardTitle>
-          <Button variant="outline" size="sm" onClick={addProject}><Plus className="mr-1 h-4 w-4" /> Add</Button>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {profile.projects.length === 0 && <p className="text-sm text-muted-foreground">No projects added yet</p>}
-          {profile.projects.map((proj, i) => (
-            <div key={i} className="space-y-3 rounded-lg border border-border p-4">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Input placeholder="Project Name" value={proj.name} onChange={(e) => { const p = [...profile.projects]; p[i] = { ...p[i], name: e.target.value }; updateField("projects", p); }} />
-                <div className="flex gap-2">
-                  <Input placeholder="URL" value={proj.url} onChange={(e) => { const p = [...profile.projects]; p[i] = { ...p[i], url: e.target.value }; updateField("projects", p); }} />
-                  <Button variant="ghost" size="icon" onClick={() => updateField("projects", profile.projects.filter((_, j) => j !== i))} className="text-destructive shrink-0"><X className="h-4 w-4" /></Button>
-                </div>
-              </div>
-              <Textarea placeholder="Brief description of the project..." value={proj.description} onChange={(e) => { const p = [...profile.projects]; p[i] = { ...p[i], description: e.target.value }; updateField("projects", p); }} rows={2} />
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+    {profile.projects.map((proj, i) => (
+      <div key={i} className="space-y-3 rounded-lg border p-4">
 
-      {/* Socials */}
-      <Card>
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2 text-lg"><Globe className="h-5 w-5 text-primary" /> Social Links</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div><Label>LinkedIn</Label><Input placeholder="https://linkedin.com/in/yourprofile" value={profile.socials.linkedin} onChange={(e) => updateField("socials", { ...profile.socials, linkedin: e.target.value })} /></div>
-          <div><Label>GitHub</Label><Input placeholder="https://github.com/yourusername" value={profile.socials.github} onChange={(e) => updateField("socials", { ...profile.socials, github: e.target.value })} /></div>
-          <div><Label>Portfolio</Label><Input placeholder="https://yourportfolio.com" value={profile.socials.portfolio} onChange={(e) => updateField("socials", { ...profile.socials, portfolio: e.target.value })} /></div>
-        </CardContent>
-      </Card>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Input
+            placeholder="Project Name"
+            value={proj.name}
+            onChange={(e) => {
+              const updated = [...profile.projects];
+              updated[i].name = e.target.value;
+              updateField("projects", updated);
+            }}
+          />
+
+          <div className="flex gap-2">
+            <Input
+              placeholder="Project URL"
+              value={proj.url}
+              onChange={(e) => {
+                const updated = [...profile.projects];
+                updated[i].url = e.target.value;
+                updateField("projects", updated);
+              }}
+            />
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() =>
+                updateField(
+                  "projects",
+                  profile.projects.filter((_, index) => index !== i)
+                )
+              }
+              className="text-destructive"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        <Textarea
+          placeholder="Project description"
+          value={proj.description}
+          onChange={(e) => {
+            const updated = [...profile.projects];
+            updated[i].description = e.target.value;
+            updateField("projects", updated);
+          }}
+        />
+      </div>
+    ))}
+  </CardContent>
+</Card>
+<Card>
+  <CardHeader>
+    <CardTitle className="flex gap-2 items-center">
+      <Globe className="h-5 w-5" /> Social Links
+    </CardTitle>
+  </CardHeader>
+  <CardContent className="space-y-4">
+
+    <Input
+      placeholder="LinkedIn URL"
+      value={profile.socials.linkedin}
+      onChange={(e) =>
+        updateField("socials", {
+          ...profile.socials,
+          linkedin: e.target.value,
+        })
+      }
+    />
+
+    <Input
+      placeholder="GitHub URL"
+      value={profile.socials.github}
+      onChange={(e) =>
+        updateField("socials", {
+          ...profile.socials,
+          github: e.target.value,
+        })
+      }
+    />
+
+    <Input
+      placeholder="Portfolio URL"
+      value={profile.socials.portfolio}
+      onChange={(e) =>
+        updateField("socials", {
+          ...profile.socials,
+          portfolio: e.target.value,
+        })
+      }
+    />
+
+  </CardContent>
+</Card>
+
+
     </motion.div>
   );
 };
