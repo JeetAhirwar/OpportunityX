@@ -16,6 +16,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import SEOHead from "@/components/common/SEOHead";
 
 const JobDetail = () => {
   const { id } = useParams();
@@ -84,6 +85,19 @@ const JobDetail = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title={`${job.title} at ${job.company} — OpportunityX`}
+        description={`Apply for ${job.title} at ${job.company}. ${job.salary} · ${job.location}`}
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "JobPosting",
+          title: job.title,
+          description: job.description,
+          hiringOrganization: { "@type": "Organization", name: job.company },
+          jobLocation: { "@type": "Place", address: job.location },
+          datePosted: new Date().toISOString(),
+        }}
+      />
       <Navbar />
       <div className="container mx-auto px-4 py-8">
         <Button variant="ghost" size="sm" className="mb-6" asChild>
