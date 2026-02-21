@@ -15,6 +15,7 @@ import { Slider } from "@/components/ui/slider";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import SEOHead from "@/components/common/SEOHead";
 
 const allJobs = Array.from({ length: 24 }, (_, i) => ({
   id: i + 1,
@@ -118,6 +119,11 @@ const Jobs = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead
+        title="Browse Jobs — OpportunityX"
+        description="Find your next career opportunity. Search thousands of jobs with filters for location, salary, and experience level."
+        canonical="https://opportunityx.com/jobs"
+      />
       <Navbar />
       <section className="border-b border-border bg-card py-8">
         <div className="container mx-auto px-4">

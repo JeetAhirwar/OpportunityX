@@ -16,8 +16,8 @@ import {
   LogOut,
   Settings,
   LayoutDashboard,
-  Briefcase,
 } from "lucide-react";
+import OXLogo from "@/components/common/OXLogo";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -57,9 +57,7 @@ const Navbar = () => {
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2">
-          <div className="gradient-primary flex h-9 w-9 items-center justify-center rounded-lg">
-            <Briefcase className="h-5 w-5 text-primary-foreground" />
-          </div>
+          <OXLogo className="h-9 w-9" />
           <span className="font-display text-xl font-bold">
             Opportunity<span className="gradient-text">X</span>
           </span>

@@ -9,6 +9,37 @@ const profileSchema = new mongoose.Schema(
             unique: true,
         },
 
+        username: {
+            type: String,
+            unique: true,
+            sparse: true,
+            trim: true,
+            lowercase: true,
+            index: true,
+        },
+
+        title: {
+            type: String,
+            trim: true,
+            default: "",
+        },
+
+        photo: {
+            type: String,
+            default: "",
+        },
+
+        candidateType: {
+            type: String,
+            enum: ["fresher", "experienced"],
+            default: "fresher",
+        },
+
+        resumeUrl: {
+            type: String,
+            default: "",
+        },
+
         name: {
             type: String,
             required: [true, "Name is required"],
@@ -77,6 +108,15 @@ const profileSchema = new mongoose.Schema(
                 name: String,
                 url: String,
                 description: String,
+            },
+        ],
+
+        certifications: [
+            {
+                name: String,
+                issuer: String,
+                year: String,
+                credentialUrl: String,
             },
         ],
 
