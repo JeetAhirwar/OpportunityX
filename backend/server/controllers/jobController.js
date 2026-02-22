@@ -3,10 +3,15 @@ const Job = require("../models/Job");
 // Create job (recruiter)
 exports.createJob = async (req, res) => {
   try {
-    const job = await Job.create({ ...req.body, postedBy: req.user._id });
+    const job = await Job.create({
+      ...req.body,
+      postedBy: req.user._id,
+    });
+
     res.status(201).json(job);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Create Job Error:", error);
+    res.status(400).json({ message: error.message });
   }
 };
 
@@ -85,9 +90,16 @@ exports.getJobById = async (req, res) => {
 // Get recruiter's jobs
 exports.getMyJobs = async (req, res) => {
   try {
-    const jobs = await Job.find({ postedBy: req.user._id }).sort({ createdAt: -1 });
+    if (!req.user) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+
+    const jobs = await Job.find({ postedBy: req.user._id })
+      .sort({ createdAt: -1 });
+
     res.json(jobs);
   } catch (error) {
+    console.error("getMyJobs error:", error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -95,12 +107,25 @@ exports.getMyJobs = async (req, res) => {
 // Change job status
 exports.updateJobStatus = async (req, res) => {
   try {
+    const { status } = req.body;
+
+    // Only allow valid statuses
+    const allowedStatuses = ["active", "closed", "draft", "pending"];
+
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({ message: "Invalid status value" });
+    }
+
     const job = await Job.findOneAndUpdate(
       { _id: req.params.id, postedBy: req.user._id },
-      { status: req.body.status },
+      { status },
       { new: true }
     );
-    if (!job) return res.status(404).json({ message: "Job not found" });
+
+    if (!job) {
+      return res.status(404).json({ message: "Job not found" });
+    }
+
     res.json(job);
   } catch (error) {
     res.status(500).json({ message: error.message });

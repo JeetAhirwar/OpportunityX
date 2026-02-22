@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import PageHeader from "@/components/common/PageHeader";
+import api from "@/lib/api"; // or wherever your axios instance is
 
 const steps = ["Job Details", "Requirements", "Compensation", "Preview"];
 
@@ -35,9 +36,45 @@ const PostJob = () => {
   };
 
   const handleSubmit = async (draft = false) => {
-    // API: api.post("/recruiter/jobs", { ...form, status: draft ? "draft" : "active" })
-    toast({ title: draft ? "Draft saved" : "Job posted", description: draft ? "You can publish it later." : "Your job is now live." });
-  };
+  try {
+    const payload = {
+      title: form.title,
+      company: form.company,
+      location: form.location,
+      jobType: form.type,
+      workMode: form.workMode,
+      description: form.description,
+      responsibilities: form.responsibilities,
+      qualifications: form.qualifications,
+      skills: form.skills,
+      experienceLevel: form.experience,
+      deadline: form.deadline,
+      salary: {
+        min: Number(form.salaryMin),
+        max: Number(form.salaryMax),
+        currency: form.currency,
+      },
+      status: draft ? "draft" : "active",
+    };
+
+    await api.post("/api/jobs", payload);
+
+    toast({
+      title: draft ? "Draft saved" : "Job posted",
+      description: draft
+        ? "You can publish it later."
+        : "Your job is now live.",
+    });
+
+  } catch (error: any) {
+    console.error(error);
+    toast({
+      title: "Error",
+      description: error.response?.data?.message || "Failed to post job",
+      variant: "destructive",
+    });
+  }
+};
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
@@ -103,7 +140,7 @@ const PostJob = () => {
               <Select value={form.experience} onValueChange={(v) => update("experience", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="entry">Entry Level</SelectItem>
+                  <SelectItem value="junior">Entry Level</SelectItem>
                   <SelectItem value="mid">Mid Level</SelectItem>
                   <SelectItem value="senior">Senior</SelectItem>
                   <SelectItem value="lead">Lead / Principal</SelectItem>

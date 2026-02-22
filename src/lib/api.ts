@@ -1,7 +1,5 @@
-// Centralized API client for OpportunityX
-// Configure API_BASE_URL to point to your Node.js backend
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 interface ApiOptions extends RequestInit {
   skipAuth?: boolean;
@@ -27,13 +25,20 @@ class ApiClient {
     localStorage.removeItem("ox_user");
   }
 
-  private async request<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
-    const { skipAuth = false, headers: customHeaders, ...rest } = options;
+  private async request<T>(
+    endpoint: string,
+    options: ApiOptions = {}
+  ): Promise<T> {
+    const { skipAuth = false, headers: customHeaders, body, ...rest } = options;
 
     const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-      ...((customHeaders as Record<string, string>) || {}),
+      ...(customHeaders as Record<string, string>),
     };
+
+    // Only set JSON header if body is not FormData
+    if (body && !(body instanceof FormData)) {
+      headers["Content-Type"] = "application/json";
+    }
 
     if (!skipAuth) {
       const token = this.getToken();
@@ -44,6 +49,7 @@ class ApiClient {
 
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       headers,
+      body,
       ...rest,
     });
 
@@ -53,10 +59,17 @@ class ApiClient {
       throw new Error("Session expired. Please login again.");
     }
 
-    const data = await response.json();
+    let data: any = null;
+    const contentType = response.headers.get("content-type");
+
+    if (contentType && contentType.includes("application/json")) {
+      data = await response.json();
+    }
 
     if (!response.ok) {
-      throw new Error(data.message || `Request failed with status ${response.status}`);
+      throw new Error(
+        data?.message || `Request failed with status ${response.status}`
+      );
     }
 
     return data;
@@ -96,6 +109,7 @@ class ApiClient {
 
   async upload<T>(endpoint: string, formData: FormData): Promise<T> {
     const token = this.getToken();
+
     const headers: Record<string, string> = {};
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
@@ -106,22 +120,42 @@ class ApiClient {
     });
 
     const data = await response.json();
-    if (!response.ok) throw new Error(data.message || "Upload failed");
+
+    if (!response.ok) {
+      throw new Error(data.message || "Upload failed");
+    }
+
     return data;
   }
 
-  // Auth helpers
   async login(email: string, password: string) {
-    const data = await this.post<{ token: string; user: any }>("/auth/login", { email, password }, { skipAuth: true });
+    const data = await this.post<{ token: string; user: any }>(
+      "/api/auth/login",
+      { email, password },
+      { skipAuth: true }
+    );
+
     this.setToken(data.token);
     localStorage.setItem("ox_user", JSON.stringify(data.user));
+
     return data;
   }
 
-  async register(payload: { name: string; email: string; password: string; role: string }) {
-    const data = await this.post<{ token: string; user: any }>("/auth/register", payload, { skipAuth: true });
+  async register(payload: {
+    name: string;
+    email: string;
+    password: string;
+    role: string;
+  }) {
+    const data = await this.post<{ token: string; user: any }>(
+      "/api/auth/register",
+      payload,
+      { skipAuth: true }
+    );
+
     this.setToken(data.token);
     localStorage.setItem("ox_user", JSON.stringify(data.user));
+
     return data;
   }
 
