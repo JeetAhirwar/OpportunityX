@@ -11,20 +11,19 @@ const {
     getJobById,
     getMyJobs,
     updateJobStatus,
+    getFeaturedJobs, // 👈 ADD THIS
 } = require("../controllers/jobController");
 
-// Public routes
+// 🌍 Public routes
 router.get("/", searchJobs);
+router.get("/featured", getFeaturedJobs); // 👈 ADD HERE (BEFORE :id)
 router.get("/my", protect, authorize("recruiter"), getMyJobs);
 router.get("/:id", getJobById);
 
-// Recruiter routes
-// router.get("/my", protect, authorize("recruiter"), getMyJobs);
+// 👔 Recruiter routes
 router.post("/", protect, authorize("recruiter"), createJob);
 router.put("/:id", protect, authorize("recruiter"), updateJob);
 router.delete("/:id", protect, authorize("recruiter"), deleteJob);
-
-// ✅ Update Job Status (Active / Closed / Draft)
 router.patch("/:id/status", protect, authorize("recruiter"), updateJobStatus);
 
 module.exports = router;

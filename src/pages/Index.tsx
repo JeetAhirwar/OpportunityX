@@ -1,23 +1,24 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import {
-  Search,
-  MapPin,
-  ArrowRight,
-  Briefcase,
-  Building2,
-  Users,
-  TrendingUp,
-  Star,
-  CheckCircle2,
-  Upload,
-  Brain,
-  MessageSquare,
-  Zap,
-  BookmarkPlus,
-  ChevronRight,
-} from "lucide-react";
+import
+  {
+    Search,
+    MapPin,
+    ArrowRight,
+    Briefcase,
+    Building2,
+    Users,
+    TrendingUp,
+    Star,
+    CheckCircle2,
+    Upload,
+    Brain,
+    MessageSquare,
+    Zap,
+    BookmarkPlus,
+    ChevronRight,
+  } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -40,14 +41,7 @@ const stats = [
   { icon: TrendingUp, value: "98%", label: "Success Rate" },
 ];
 
-const featuredJobs = [
-  { id: 1, title: "Senior React Developer", company: "TechCorp", location: "San Francisco, CA", type: "Full-time", salary: "$150K - $200K", remote: true, logo: "TC" },
-  { id: 2, title: "Product Designer", company: "DesignHub", location: "New York, NY", type: "Full-time", salary: "$120K - $160K", remote: false, logo: "DH" },
-  { id: 3, title: "Data Scientist", company: "AI Labs", location: "Austin, TX", type: "Full-time", salary: "$140K - $180K", remote: true, logo: "AL" },
-  { id: 4, title: "DevOps Engineer", company: "CloudScale", location: "Seattle, WA", type: "Contract", salary: "$130K - $170K", remote: true, logo: "CS" },
-  { id: 5, title: "Marketing Manager", company: "GrowthCo", location: "Chicago, IL", type: "Full-time", salary: "$100K - $130K", remote: false, logo: "GC" },
-  { id: 6, title: "Backend Engineer", company: "ServerPro", location: "Remote", type: "Full-time", salary: "$135K - $175K", remote: true, logo: "SP" },
-];
+
 
 const howItWorks = [
   { icon: Upload, title: "Create Profile", desc: "Sign up and build your professional profile with skills, experience, and resume." },
@@ -62,9 +56,38 @@ const testimonials = [
   { name: "Priya Patel", role: "Product Manager at Stripe", text: "The resume parser saved me hours. It auto-filled my profile perfectly and matched me with relevant jobs.", avatar: "PP" },
 ];
 
-const Index = () => {
+const Index = () =>
+{
   const [searchTitle, setSearchTitle] = useState("");
   const [searchLocation, setSearchLocation] = useState("");
+
+  const [featuredJobs, setFeaturedJobs] = useState([]);
+  const [loadingFeatured, setLoadingFeatured] = useState(true);
+
+  useEffect(() =>
+  {
+    const fetchFeaturedJobs = async () =>
+    {
+      try
+      {
+        const res = await fetch("http://localhost:5000/api/jobs/featured");
+        const data = await res.json();
+
+        if (data.success)
+        {
+          setFeaturedJobs(data.data);
+        }
+      } catch (error)
+      {
+        console.error("Failed to fetch featured jobs", error);
+      } finally
+      {
+        setLoadingFeatured(false);
+      }
+    };
+
+    fetchFeaturedJobs();
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -168,7 +191,8 @@ const Index = () => {
               <Link to="/jobs">View All Jobs <ChevronRight className="ml-1 h-4 w-4" /></Link>
             </Button>
           </div>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+
+          {/* <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {featuredJobs.map((job, i) => (
               <motion.div
                 key={job.id}
@@ -181,7 +205,7 @@ const Index = () => {
                   <CardContent className="p-5">
                     <div className="mb-4 flex items-start justify-between">
                       <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10 font-display text-sm font-bold text-primary">
-                        {job.logo}
+                        {job.company?.substring(0, 2).toUpperCase()}
                       </div>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
                         <BookmarkPlus className="h-4 w-4" />
@@ -193,20 +217,95 @@ const Index = () => {
                       <span className="flex items-center gap-1">
                         <MapPin className="h-3 w-3" /> {job.location}
                       </span>
-                      <span className="rounded-full bg-secondary px-2 py-0.5">{job.type}</span>
-                      {job.remote && <span className="rounded-full bg-success/10 px-2 py-0.5 text-success">Remote</span>}
+                      <span className="rounded-full bg-secondary px-2 py-0.5">{job.jobType}</span>
+                      {job.workMode === "remote" && (
+                      <span className="rounded-full bg-success/10 px-2 py-0.5 text-success">
+                        Remote
+                      </span>
+                      )}
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="font-display text-sm font-semibold">{job.salary}</span>
+                      <span className="font-display text-sm font-semibold">{job.salary?.currency} {job.salary?.min} - {job.salary?.max}</span>
                       <Button size="sm" variant="outline" className="h-8 text-xs" asChild>
-                        <Link to={`/jobs/${job.id}`}>Apply Now</Link>
+                        <Link to={`/jobs/${job._id}`}>Apply Now</Link>
                       </Button>
                     </div>
                   </CardContent>
                 </Card>
               </motion.div>
             ))}
-          </div>
+          </div> */}
+
+          {loadingFeatured ? (
+            <div className="text-center py-10">
+              <p className="text-muted-foreground">Loading featured jobs...</p>
+            </div>
+          ) : featuredJobs.length === 0 ? (
+            <div className="text-center py-10">
+              <p className="text-muted-foreground">No featured jobs available.</p>
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {featuredJobs.map((job, i) => (
+                <motion.div
+                  key={job._id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.05 }}
+                >
+                  <Card className="group cursor-pointer transition-all hover:shadow-lg hover:border-primary/30">
+                    <CardContent className="p-5">
+                      <div className="mb-4 flex items-start justify-between">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10 font-display text-sm font-bold text-primary">
+                          {job.company?.substring(0, 2).toUpperCase()}
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
+                          <BookmarkPlus className="h-4 w-4" />
+                        </Button>
+                      </div>
+
+                      <h3 className="mb-1 font-display font-semibold group-hover:text-primary transition-colors">
+                        {job.title}
+                      </h3>
+
+                      <p className="mb-3 text-sm text-muted-foreground">
+                        {job.company}
+                      </p>
+
+                      <div className="mb-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <MapPin className="h-3 w-3" /> {job.location}
+                        </span>
+
+                        <span className="rounded-full bg-secondary px-2 py-0.5">
+                          {job.jobType}
+                        </span>
+
+                        {job.workMode === "remote" && (
+                          <span className="rounded-full bg-success/10 px-2 py-0.5 text-success">
+                            Remote
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <span className="font-display text-sm font-semibold">
+                          {job.salary?.currency} {job.salary?.min} - {job.salary?.max}
+                        </span>
+
+                        <Button size="sm" variant="outline" className="h-8 text-xs" asChild>
+                          <Link to={`/jobs/${job._id}`}>
+                            Apply Now
+                          </Link>
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
+          )}
           <div className="mt-8 text-center md:hidden">
             <Button variant="outline" asChild>
               <Link to="/jobs">View All Jobs <ChevronRight className="ml-1 h-4 w-4" /></Link>

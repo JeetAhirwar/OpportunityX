@@ -1,6 +1,9 @@
 const Job = require("../models/Job");
 
-// Create job (recruiter)
+
+// =============================
+// Create Job (Recruiter)
+// =============================
 exports.createJob = async (req, res) => {
   try {
     const job = await Job.create({
@@ -8,112 +11,239 @@ exports.createJob = async (req, res) => {
       postedBy: req.user._id,
     });
 
-    res.status(201).json(job);
+    res.status(201).json({
+      success: true,
+      data: job,
+    });
   } catch (error) {
     console.error("Create Job Error:", error);
-    res.status(400).json({ message: error.message });
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 
-// Update job
+
+// =============================
+// Update Job
+// =============================
 exports.updateJob = async (req, res) => {
   try {
     const job = await Job.findOneAndUpdate(
       { _id: req.params.id, postedBy: req.user._id },
       req.body,
-      { new: true }
+      { new: true, runValidators: true }
     );
-    if (!job) return res.status(404).json({ message: "Job not found" });
-    res.json(job);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
 
-// Delete job
-exports.deleteJob = async (req, res) => {
-  try {
-    const job = await Job.findOneAndDelete({ _id: req.params.id, postedBy: req.user._id });
-    if (!job) return res.status(404).json({ message: "Job not found" });
-    res.json({ message: "Job deleted" });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// Search jobs (public)
-exports.searchJobs = async (req, res) => {
-  try {
-    const { page = 1, limit = 10, keyword, location, type, experience, salaryMin, salaryMax, sort } = req.query;
-    const filter = { status: "active" };
-
-    if (keyword) filter.$text = { $search: keyword };
-    if (location) filter.location = { $regex: location, $options: "i" };
-    if (type) filter.jobType = type;
-    if (experience) filter.experienceLevel = experience;
-    if (salaryMin || salaryMax) {
-      filter["salary.min"] = {};
-      if (salaryMin) filter["salary.min"].$gte = Number(salaryMin);
-      if (salaryMax) filter["salary.max"] = { $lte: Number(salaryMax) };
+    if (!job) {
+      return res.status(404).json({
+        success: false,
+        message: "Job not found",
+      });
     }
 
+    res.json({
+      success: true,
+      data: job,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+// =============================
+// Delete Job
+// =============================
+exports.deleteJob = async (req, res) => {
+  try {
+    const job = await Job.findOneAndDelete({
+      _id: req.params.id,
+      postedBy: req.user._id,
+    });
+
+    if (!job) {
+      return res.status(404).json({
+        success: false,
+        message: "Job not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Job deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+// =============================
+// Search Jobs (Public)
+// =============================
+exports.searchJobs = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      keyword,
+      location,
+      type,
+      experience,
+      salaryMin,
+      salaryMax,
+      sort,
+    } = req.query;
+
+    const filter = { status: "active" };
+
+    // Text search
+    if (keyword) {
+      filter.$text = { $search: keyword };
+    }
+
+    // Location filter
+    if (location) {
+      filter.location = { $regex: location, $options: "i" };
+    }
+
+    // Job Type
+    if (type) {
+      filter.jobType = type;
+    }
+
+    // Experience
+    if (experience) {
+      filter.experienceLevel = experience;
+    }
+
+    // Salary Range (Fixed Properly)
+    if (salaryMin || salaryMax) {
+      filter["salary.min"] = { $gte: Number(salaryMin || 0) };
+      filter["salary.max"] = { $lte: Number(salaryMax || 1000000000) };
+    }
+
+    // Sorting
     let sortOption = { createdAt: -1 };
-    if (sort === "salary-high") sortOption = { "salary.max": -1 };
-    if (sort === "salary-low") sortOption = { "salary.min": 1 };
+
+    if (sort === "salary-high") {
+      sortOption = { "salary.max": -1 };
+    }
+
+    if (sort === "salary-low") {
+      sortOption = { "salary.min": 1 };
+    }
 
     const total = await Job.countDocuments(filter);
+
     const jobs = await Job.find(filter)
       .sort(sortOption)
       .skip((Number(page) - 1) * Number(limit))
       .limit(Number(limit))
       .populate("postedBy", "name email");
 
-    res.json({ jobs, total, page: Number(page), pages: Math.ceil(total / Number(limit)) });
+    res.json({
+      success: true,
+      total,
+      page: Number(page),
+      pages: Math.ceil(total / Number(limit)),
+      data: jobs,
+    });
+
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 
-// Get job by ID
+
+// =============================
+// Get Job By ID (Atomic View Increment)
+// =============================
 exports.getJobById = async (req, res) => {
   try {
-    const job = await Job.findById(req.params.id).populate("postedBy", "name email");
-    if (!job) return res.status(404).json({ message: "Job not found" });
-    job.views += 1;
-    await job.save();
-    res.json(job);
+    const job = await Job.findByIdAndUpdate(
+      req.params.id,
+      { $inc: { views: 1 } },
+      { new: true }
+    ).populate("postedBy", "name email");
+
+    if (!job) {
+      return res.status(404).json({
+        success: false,
+        message: "Job not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      data: job,
+    });
+
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 
-// Get recruiter's jobs
+
+// =============================
+// Get Recruiter's Jobs
+// =============================
 exports.getMyJobs = async (req, res) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ message: "Not authorized" });
+      return res.status(401).json({
+        success: false,
+        message: "Not authorized",
+      });
     }
 
-    const jobs = await Job.find({ postedBy: req.user._id })
-      .sort({ createdAt: -1 });
+    const jobs = await Job.find({
+      postedBy: req.user._id,
+    }).sort({ createdAt: -1 });
 
-    res.json(jobs);
+    res.json({
+      success: true,
+      data: jobs,
+    });
+
   } catch (error) {
     console.error("getMyJobs error:", error);
-    res.status(500).json({ message: error.message });
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 
-// Change job status
+
+// =============================
+// Update Job Status
+// =============================
 exports.updateJobStatus = async (req, res) => {
   try {
     const { status } = req.body;
 
-    // Only allow valid statuses
     const allowedStatuses = ["active", "closed", "draft", "pending"];
 
     if (!allowedStatuses.includes(status)) {
-      return res.status(400).json({ message: "Invalid status value" });
+      return res.status(400).json({
+        success: false,
+        message: "Invalid status value",
+      });
     }
 
     const job = await Job.findOneAndUpdate(
@@ -123,11 +253,50 @@ exports.updateJobStatus = async (req, res) => {
     );
 
     if (!job) {
-      return res.status(404).json({ message: "Job not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Job not found",
+      });
     }
 
-    res.json(job);
+    res.json({
+      success: true,
+      data: job,
+    });
+
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+// =============================
+// Get Featured Jobs
+// =============================
+exports.getFeaturedJobs = async (_req, res) => {
+  try {
+    const jobs = await Job.find({
+      featured: true,
+      status: "active",
+    })
+      .sort({ createdAt: -1 })
+      .limit(6)
+      .select("-__v")
+      .populate("postedBy", "name");
+
+    res.status(200).json({
+      success: true,
+      count: jobs.length,
+      data: jobs,
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch featured jobs",
+    });
   }
 };
