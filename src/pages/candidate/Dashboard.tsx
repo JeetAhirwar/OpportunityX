@@ -1,10 +1,11 @@
-import { Routes, Route, Link, useLocation } from "react-router-dom";
+import { Routes, Route, Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
-import {
-  LayoutDashboard, User, FileText, Briefcase, Bookmark,
-  Bell, Brain, Settings, LogOut, Menu, X, MessageSquare,
-} from "lucide-react";
+import
+  {
+    LayoutDashboard, User, FileText, Briefcase, Bookmark,
+    Bell, Brain, Settings, LogOut, Menu, X, MessageSquare,
+  } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -35,7 +36,8 @@ const sidebarLinks = [
   { label: "Settings", href: "/candidate/settings", icon: Settings },
 ];
 
-const DashboardHome = () => {
+const DashboardHome = () =>
+{
   const { user } = useAuth();
   const statusColors: Record<string, string> = {
     Applied: "bg-info/10 text-info", Reviewed: "bg-warning/10 text-warning",
@@ -104,59 +106,105 @@ const DashboardHome = () => {
   );
 };
 
-const CandidateDashboard = () => {
+const CandidateDashboard = () =>
+{
   const { logout } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const navigate = useNavigate();
+  const [showProfilePopup, setShowProfilePopup] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
-  useEffect(() => {
+  useEffect(() =>
+  {
     const completed = localStorage.getItem("ox_onboarding_complete");
-    if (!completed) setShowOnboarding(true);
+    const profileCompleted = localStorage.getItem("ox_profile_complete");
+
+    if (!completed)
+    {
+      setShowOnboarding(true);
+    } else if (!profileCompleted)
+    {
+      setShowProfilePopup(true);
+    }
   }, []);
 
   return (
     <>
-      <OnboardingModal open={showOnboarding} onComplete={() => setShowOnboarding(false)} />
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <div className="flex">
-        <Button variant="ghost" size="icon" className="fixed bottom-4 right-4 z-50 h-12 w-12 rounded-full shadow-lg gradient-primary border-0 md:hidden" onClick={() => setSidebarOpen(!sidebarOpen)}>
-          {sidebarOpen ? <X className="h-5 w-5 text-primary-foreground" /> : <Menu className="h-5 w-5 text-primary-foreground" />}
-        </Button>
-        <aside className={`fixed inset-y-0 left-0 z-40 w-64 transform border-r border-border bg-card pt-16 transition-transform md:sticky md:top-16 md:h-[calc(100vh-4rem)] md:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
-          <nav className="space-y-1 p-4 overflow-y-auto h-full">
-            {sidebarLinks.map((link) => (
-              <Link key={link.href} to={link.href} onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${location.pathname === link.href ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary"}`}>
-                <link.icon className="h-4 w-4" /> {link.label}
-              </Link>
-            ))}
-            <button onClick={logout} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors">
-              <LogOut className="h-4 w-4" /> Logout
-            </button>
-          </nav>
-        </aside>
-        {sidebarOpen && <div className="fixed inset-0 z-30 bg-background/50 md:hidden" onClick={() => setSidebarOpen(false)} />}
-        <main className="flex-1 p-6 md:p-8">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <Routes>
-              <Route path="dashboard" element={<DashboardHome />} />
-              <Route path="profile" element={<ProfileBuilder />} />
-              <Route path="resume" element={<ResumeUpload />} />
-              <Route path="applied" element={<MyApplications />} />
-              <Route path="saved" element={<SavedJobs />} />
-              <Route path="alerts" element={<JobAlerts />} />
-              <Route path="recommendations" element={<JobRecommendations />} />
-              <Route path="chat" element={<ChatPage />} />
-              <Route path="notifications" element={<NotificationsPage />} />
-              <Route path="settings" element={<SettingsPage />} />
-              <Route path="*" element={<DashboardHome />} />
-            </Routes>
-          </motion.div>
-        </main>
+      <OnboardingModal
+        open={showOnboarding}
+        onComplete={() => {
+          localStorage.setItem("ox_onboarding_complete", "true");
+          setShowOnboarding(false);
+
+          const profileCompleted = localStorage.getItem("ox_profile_complete");
+          if (!profileCompleted) {
+            setShowProfilePopup(true);
+          }
+        }}
+      />
+      {showProfilePopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-card p-6 rounded-xl shadow-xl w-full max-w-md">
+            <h2 className="text-lg font-semibold mb-2">
+              Your profile is not completed
+            </h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Click below to complete your profile and unlock full features.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button
+                onClick={() =>
+                {
+                  setShowProfilePopup(false);
+                  navigate("/candidate/profile");
+                }}
+              >
+                Complete Profile
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="flex">
+          <Button variant="ghost" size="icon" className="fixed bottom-4 right-4 z-50 h-12 w-12 rounded-full shadow-lg gradient-primary border-0 md:hidden" onClick={() => setSidebarOpen(!sidebarOpen)}>
+            {sidebarOpen ? <X className="h-5 w-5 text-primary-foreground" /> : <Menu className="h-5 w-5 text-primary-foreground" />}
+          </Button>
+          <aside className={`fixed inset-y-0 left-0 z-40 w-64 transform border-r border-border bg-card pt-16 transition-transform md:sticky md:top-16 md:h-[calc(100vh-4rem)] md:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+            <nav className="space-y-1 p-4 overflow-y-auto h-full">
+              {sidebarLinks.map((link) => (
+                <Link key={link.href} to={link.href} onClick={() => setSidebarOpen(false)}
+                  className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${location.pathname === link.href ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary"}`}>
+                  <link.icon className="h-4 w-4" /> {link.label}
+                </Link>
+              ))}
+              <button onClick={logout} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors">
+                <LogOut className="h-4 w-4" /> Logout
+              </button>
+            </nav>
+          </aside>
+          {sidebarOpen && <div className="fixed inset-0 z-30 bg-background/50 md:hidden" onClick={() => setSidebarOpen(false)} />}
+          <main className="flex-1 p-6 md:p-8">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <Routes>
+                <Route path="dashboard" element={<DashboardHome />} />
+                <Route path="profile" element={<ProfileBuilder />} />
+                <Route path="resume" element={<ResumeUpload />} />
+                <Route path="applied" element={<MyApplications />} />
+                <Route path="saved" element={<SavedJobs />} />
+                <Route path="alerts" element={<JobAlerts />} />
+                <Route path="recommendations" element={<JobRecommendations />} />
+                <Route path="chat" element={<ChatPage />} />
+                <Route path="notifications" element={<NotificationsPage />} />
+                <Route path="settings" element={<SettingsPage />} />
+                <Route path="*" element={<DashboardHome />} />
+              </Routes>
+            </motion.div>
+          </main>
+        </div>
       </div>
-    </div>
     </>
   );
 };

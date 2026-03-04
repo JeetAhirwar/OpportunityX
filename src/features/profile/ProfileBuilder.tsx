@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import {
-  User, GraduationCap, Building2, FolderOpen, Globe, Plus, X, Save,
-  Code2, Camera, Award, Briefcase, Loader2,
-} from "lucide-react";
+import
+  {
+    User, GraduationCap, Building2, FolderOpen, Globe, Plus, X, Save,
+    Code2, Camera, Award, Briefcase, Loader2,
+  } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -24,47 +25,74 @@ const defaultProfile: Profile = {
   projects: [], certifications: [], socials: { linkedin: "", github: "", portfolio: "" },
 };
 
-const ProfileBuilder = () => {
+const ProfileBuilder = () =>
+{
   const { toast } = useToast();
-  const [profile, setProfile] = useState<Profile>(() => {
+  const [profile, setProfile] = useState<Profile>(() =>
+  {
     const saved = localStorage.getItem("profileDraft");
     return saved ? { ...defaultProfile, ...JSON.parse(saved) } : defaultProfile;
   });
   const [newSkill, setNewSkill] = useState("");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const phoneRegex = /^[6-9]\d{9}$/;
 
+
   // Fetch existing profile
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const data = await api.get<Profile>("/candidate/profile");
+  useEffect(() =>
+  {
+    const fetchProfile = async () =>
+    {
+      try
+      {
+        const data = await api.get<Profile>("/api/candidate/profile");
         setProfile({ ...defaultProfile, ...data });
         localStorage.removeItem("profileDraft");
-      } catch {
-        // No profile yet or not logged in — use draft
-      } finally {
+        // If profile already has required fields, lock it
+        if (data && data.name)
+        {
+          setIsEditing(false);
+          localStorage.setItem("ox_profile_complete", "true");
+        }
+      } catch (error: any)
+      {
+        if (error.response?.status === 404)
+        {
+          // No profile in DB → start fresh
+          setProfile(defaultProfile);
+          localStorage.removeItem("profileDraft");
+        } else
+        {
+          console.error("Profile fetch error:", error);
+        }
+      } finally
+      {
         setLoading(false);
       }
     };
+
     fetchProfile();
   }, []);
 
   // Auto-save draft
-  useEffect(() => {
+  useEffect(() =>
+  {
     if (!loading) localStorage.setItem("profileDraft", JSON.stringify(profile));
   }, [profile, loading]);
 
-  const formatIndianNumber = (num: string) => {
+  const formatIndianNumber = (num: string) =>
+  {
     const digits = num.replace(/\D/g, "").slice(0, 10);
     if (digits.length <= 5) return digits;
     return `${digits.slice(0, 5)} ${digits.slice(5)}`;
   };
 
-  const validateProfile = () => {
+  const validateProfile = () =>
+  {
     const e: Record<string, string> = {};
     if (!profile.name.trim()) e.name = "Full name required";
     if (!phoneRegex.test(profile.phone.replace(/\D/g, ""))) e.phone = "Invalid 10-digit number";
@@ -74,8 +102,10 @@ const ProfileBuilder = () => {
     if (profile.skills.length === 0) e.skills = "Add at least one skill";
     if (profile.candidateType === "experienced" && profile.experience.length === 0)
       e.experience = "At least one experience entry required";
-    if (profile.candidateType === "experienced") {
-      profile.experience.forEach((exp, i) => {
+    if (profile.candidateType === "experienced")
+    {
+      profile.experience.forEach((exp, i) =>
+      {
         if (!exp.company) e[`exp_company_${i}`] = "Company required";
         if (!exp.role) e[`exp_role_${i}`] = "Role required";
         if (!exp.duration) e[`exp_duration_${i}`] = "Duration required";
@@ -85,7 +115,8 @@ const ProfileBuilder = () => {
     return Object.keys(e).length === 0;
   };
 
-  const completeness = (() => {
+  const completeness = (() =>
+  {
     let score = 0;
     if (profile.name) score += 8;
     if (phoneRegex.test(profile.phone.replace(/\D/g, ""))) score += 8;
@@ -106,14 +137,17 @@ const ProfileBuilder = () => {
   const updateField = <K extends keyof Profile>(key: K, value: Profile[K]) =>
     setProfile((prev) => ({ ...prev, [key]: value }));
 
-  const addSkill = () => {
-    if (newSkill.trim() && !profile.skills.includes(newSkill.trim())) {
+  const addSkill = () =>
+  {
+    if (newSkill.trim() && !profile.skills.includes(newSkill.trim()))
+    {
       updateField("skills", [...profile.skills, newSkill.trim()]);
       setNewSkill("");
     }
   };
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) =>
+  {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
@@ -121,19 +155,28 @@ const ProfileBuilder = () => {
     reader.readAsDataURL(file);
   };
 
-  const handleSave = async () => {
-    if (!validateProfile()) {
+  const handleSave = async () =>
+  {
+    if (!validateProfile())
+    {
       toast({ title: "Validation Error", description: "Fix highlighted fields", variant: "destructive" });
       return;
     }
     setSaving(true);
-    try {
+    try
+    {
       const payload = { ...profile };
       if (payload.candidateType === "fresher") payload.experience = [];
-      await api.put("/candidate/profile", payload);
+      await api.put("/api/candidate/profile", payload);
+
       localStorage.removeItem("profileDraft");
+      localStorage.setItem("ox_profile_complete", "true");
+
+      setIsEditing(false);
+
       toast({ title: "Profile Saved", description: "Your profile updated successfully" });
-    } catch (error: any) {
+    } catch (error: any)
+    {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     }
     setSaving(false);
@@ -142,7 +185,8 @@ const ProfileBuilder = () => {
   const FieldError = ({ field }: { field: string }) =>
     errors[field] ? <p className="text-xs text-destructive mt-1">{errors[field]}</p> : null;
 
-  if (loading) {
+  if (loading)
+  {
     return (
       <div className="space-y-6">
         <Skeleton className="h-10 w-64" />
@@ -159,7 +203,18 @@ const ProfileBuilder = () => {
       <PageHeader
         title="Profile Builder"
         description="Complete your professional profile"
-        action={{ label: saving ? "Saving..." : "Save Profile", icon: saving ? Loader2 : Save, onClick: handleSave, disabled: saving }}
+        action={{
+        label: isEditing
+        ? saving
+        ? "Saving..."
+        : "Save Profile"
+        : "Edit Profile",
+        icon: isEditing ? (saving ? Loader2 : Save) : User,
+        onClick: isEditing
+        ? handleSave
+        : () => setIsEditing(true),
+        disabled: saving,
+      }}
       />
 
       {/* Completion Bar */}
@@ -189,30 +244,36 @@ const ProfileBuilder = () => {
               </div>
               <label className="absolute -bottom-1 -right-1 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md hover:bg-primary/90">
                 <Plus className="h-3.5 w-3.5" />
-                <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+                <input type="file" accept="image/*" className="hidden" disabled={!isEditing} onChange={handlePhotoUpload} />
               </label>
             </div>
             <div className="text-sm text-muted-foreground">Upload a professional photo<br />JPG, PNG up to 5MB</div>
           </div>
 
           <div>
-            <Input placeholder="Full Name" value={profile.name} onChange={(e) => updateField("name", e.target.value)} className={errors.name ? "border-destructive" : ""} />
+            {/* <Input placeholder="Full Name" value={profile.name} onChange={(e) => updateField("name", e.target.value)} className={errors.name ? "border-destructive" : ""} /> */}
+            <Input
+              placeholder="Full Name"
+              value={profile.name}
+              onChange={(e) => updateField("name", e.target.value)}
+              disabled={!isEditing}
+            />
             <FieldError field="name" />
           </div>
           <div>
-            <Input placeholder="Professional Title (e.g. Full Stack Developer)" value={profile.title} onChange={(e) => updateField("title", e.target.value)} className={errors.title ? "border-destructive" : ""} />
+            <Input placeholder="Professional Title (e.g. Full Stack Developer)" value={profile.title} onChange={(e) => updateField("title", e.target.value)} disabled={!isEditing} className={errors.title ? "border-destructive" : ""} />
             <FieldError field="title" />
           </div>
           <div>
-            <Input placeholder="+91 98765 43210" value={profile.phone} onChange={(e) => updateField("phone", formatIndianNumber(e.target.value))} className={errors.phone ? "border-destructive" : ""} />
+            <Input placeholder="+91 98765 43210" value={profile.phone} onChange={(e) => updateField("phone", formatIndianNumber(e.target.value))} disabled={!isEditing} className={errors.phone ? "border-destructive" : ""} />
             <FieldError field="phone" />
           </div>
           <div>
-            <Input placeholder="City, State" value={profile.location} onChange={(e) => updateField("location", e.target.value)} className={errors.location ? "border-destructive" : ""} />
+            <Input placeholder="City, State" value={profile.location} onChange={(e) => updateField("location", e.target.value)}    disabled={!isEditing} className={errors.location ? "border-destructive" : ""} />
             <FieldError field="location" />
           </div>
           <div>
-            <Textarea placeholder="Professional summary (career goal, expertise, achievements — min 20 chars)" value={profile.bio} onChange={(e) => updateField("bio", e.target.value)} className={errors.bio ? "border-destructive" : ""} />
+            <Textarea placeholder="Professional summary (career goal, expertise, achievements — min 20 chars)" value={profile.bio} onChange={(e) => updateField("bio", e.target.value)} disabled={!isEditing} className={errors.bio ? "border-destructive" : ""} />
             <FieldError field="bio" />
           </div>
         </CardContent>
@@ -222,7 +283,7 @@ const ProfileBuilder = () => {
       <Card>
         <CardHeader><CardTitle className="flex gap-2"><Briefcase className="h-5 w-5" /> Candidate Type</CardTitle></CardHeader>
         <CardContent>
-          <RadioGroup value={profile.candidateType} onValueChange={(v) => updateField("candidateType", v as "fresher" | "experienced")} className="flex gap-4">
+          <RadioGroup value={profile.candidateType} onValueChange={(v) => isEditing && updateField("candidateType", v as "fresher" | "experienced")} className="flex gap-4">
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="fresher" id="fresher" />
               <Label htmlFor="fresher">Fresher</Label>
@@ -249,8 +310,8 @@ const ProfileBuilder = () => {
             ))}
           </div>
           <div className="flex gap-2">
-            <Input placeholder="React, Node.js, MongoDB" value={newSkill} onChange={(e) => setNewSkill(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addSkill())} />
-            <Button onClick={addSkill} variant="outline"><Plus className="h-4 w-4" /></Button>
+            <Input placeholder="React, Node.js, MongoDB" value={newSkill} disabled={!isEditing} onChange={(e) => setNewSkill(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addSkill())} />
+            <Button onClick={addSkill} disabled={!isEditing} variant="outline"><Plus className="h-4 w-4" /></Button>
           </div>
         </CardContent>
       </Card>
@@ -259,17 +320,17 @@ const ProfileBuilder = () => {
       <Card>
         <CardHeader className="flex flex-row justify-between items-center">
           <CardTitle className="flex gap-2 items-center"><GraduationCap className="h-5 w-5" /> Education</CardTitle>
-          <Button variant="outline" size="sm" onClick={() => updateField("education", [...profile.education, { school: "", degree: "", year: "" }])}><Plus className="h-4 w-4 mr-1" /> Add</Button>
+          <Button variant="outline" size="sm" disabled={!isEditing} onClick={() => updateField("education", [...profile.education, { school: "", degree: "", year: "" }])}><Plus className="h-4 w-4 mr-1" /> Add</Button>
         </CardHeader>
         <CardContent className="space-y-4">
           {profile.education.length === 0 && <p className="text-sm text-muted-foreground">No education added yet</p>}
           {profile.education.map((edu, i) => (
             <div key={i} className="grid gap-3 rounded-lg border border-border p-4 sm:grid-cols-3">
-              <Input placeholder="School / University" value={edu.school} onChange={(e) => { const u = [...profile.education]; u[i] = { ...u[i], school: e.target.value }; updateField("education", u); }} />
-              <Input placeholder="Degree" value={edu.degree} onChange={(e) => { const u = [...profile.education]; u[i] = { ...u[i], degree: e.target.value }; updateField("education", u); }} />
+              <Input placeholder="School / University" value={edu.school} onChange={(e) => { const u = [...profile.education]; u[i] = { ...u[i], school: e.target.value }; updateField("education", u); }} disabled={!isEditing} />
+              <Input placeholder="Degree" value={edu.degree} onChange={(e) => { const u = [...profile.education]; u[i] = { ...u[i], degree: e.target.value }; updateField("education", u); }} disabled={!isEditing} />
               <div className="flex gap-2">
-                <Input placeholder="Year" value={edu.year} onChange={(e) => { const u = [...profile.education]; u[i] = { ...u[i], year: e.target.value }; updateField("education", u); }} />
-                <Button variant="ghost" size="icon" onClick={() => updateField("education", profile.education.filter((_, idx) => idx !== i))} className="text-destructive"><X className="h-4 w-4" /></Button>
+                <Input placeholder="Year" value={edu.year} onChange={(e) => { const u = [...profile.education]; u[i] = { ...u[i], year: e.target.value }; updateField("education", u); }} disabled={!isEditing} />
+                <Button variant="ghost" size="icon" onClick={() => updateField("education", profile.education.filter((_, idx) => idx !== i))} disabled={!isEditing} className="text-destructive"><X className="h-4 w-4" /></Button>
               </div>
             </div>
           ))}
@@ -281,7 +342,7 @@ const ProfileBuilder = () => {
         <CardHeader className="flex flex-row justify-between items-center">
           <CardTitle className="flex gap-2 items-center"><Building2 className="h-5 w-5" /> Experience</CardTitle>
           {profile.candidateType === "experienced" && (
-            <Button variant="outline" size="sm" onClick={() => updateField("experience", [...profile.experience, { company: "", role: "", duration: "", description: "" }])}><Plus className="h-4 w-4 mr-1" /> Add</Button>
+            <Button variant="outline" size="sm" disabled={!isEditing} onClick={() => updateField("experience", [...profile.experience, { company: "", role: "", duration: "", description: "" }])}><Plus className="h-4 w-4 mr-1" /> Add</Button>
           )}
         </CardHeader>
         <CardContent className="space-y-4">
@@ -297,22 +358,22 @@ const ProfileBuilder = () => {
                 <div key={i} className="space-y-3 rounded-lg border border-border p-4">
                   <div className="grid gap-3 sm:grid-cols-3">
                     <div>
-                      <Input placeholder="Company" value={exp.company} onChange={(e) => { const u = [...profile.experience]; u[i] = { ...u[i], company: e.target.value }; updateField("experience", u); }} className={errors[`exp_company_${i}`] ? "border-destructive" : ""} />
+                      <Input placeholder="Company" value={exp.company} disabled={!isEditing} onChange={(e) => { const u = [...profile.experience]; u[i] = { ...u[i], company: e.target.value }; updateField("experience", u); }} className={errors[`exp_company_${i}`] ? "border-destructive" : ""} />
                       <FieldError field={`exp_company_${i}`} />
                     </div>
                     <div>
-                      <Input placeholder="Role" value={exp.role} onChange={(e) => { const u = [...profile.experience]; u[i] = { ...u[i], role: e.target.value }; updateField("experience", u); }} className={errors[`exp_role_${i}`] ? "border-destructive" : ""} />
+                      <Input placeholder="Role" value={exp.role} disabled={!isEditing} onChange={(e) => { const u = [...profile.experience]; u[i] = { ...u[i], role: e.target.value }; updateField("experience", u); }} className={errors[`exp_role_${i}`] ? "border-destructive" : ""} />
                       <FieldError field={`exp_role_${i}`} />
                     </div>
                     <div className="flex gap-2">
                       <div className="flex-1">
-                        <Input placeholder="Duration" value={exp.duration} onChange={(e) => { const u = [...profile.experience]; u[i] = { ...u[i], duration: e.target.value }; updateField("experience", u); }} className={errors[`exp_duration_${i}`] ? "border-destructive" : ""} />
+                        <Input placeholder="Duration" value={exp.duration} disabled={!isEditing} onChange={(e) => { const u = [...profile.experience]; u[i] = { ...u[i], duration: e.target.value }; updateField("experience", u); }} className={errors[`exp_duration_${i}`] ? "border-destructive" : ""} />
                         <FieldError field={`exp_duration_${i}`} />
                       </div>
-                      <Button variant="ghost" size="icon" onClick={() => updateField("experience", profile.experience.filter((_, idx) => idx !== i))} className="text-destructive"><X className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" onClick={() => updateField("experience", profile.experience.filter((_, idx) => idx !== i))} disabled={!isEditing} className="text-destructive"><X className="h-4 w-4" /></Button>
                     </div>
                   </div>
-                  <Textarea placeholder="Describe your achievements" value={exp.description} onChange={(e) => { const u = [...profile.experience]; u[i] = { ...u[i], description: e.target.value }; updateField("experience", u); }} />
+                  <Textarea placeholder="Describe your achievements" value={exp.description} disabled={!isEditing} onChange={(e) => { const u = [...profile.experience]; u[i] = { ...u[i], description: e.target.value }; updateField("experience", u); }} />
                 </div>
               ))}
             </>
@@ -324,20 +385,20 @@ const ProfileBuilder = () => {
       <Card>
         <CardHeader className="flex flex-row justify-between items-center">
           <CardTitle className="flex gap-2 items-center"><FolderOpen className="h-5 w-5" /> Projects</CardTitle>
-          <Button variant="outline" size="sm" onClick={() => updateField("projects", [...profile.projects, { name: "", url: "", description: "" }])}><Plus className="h-4 w-4 mr-1" /> Add</Button>
+          <Button variant="outline" size="sm" disabled={!isEditing} onClick={() => updateField("projects", [...profile.projects, { name: "", url: "", description: "" }])}><Plus className="h-4 w-4 mr-1" /> Add</Button>
         </CardHeader>
         <CardContent className="space-y-4">
           {profile.projects.length === 0 && <p className="text-sm text-muted-foreground">No projects added yet</p>}
           {profile.projects.map((proj, i) => (
             <div key={i} className="space-y-3 rounded-lg border border-border p-4">
               <div className="grid gap-3 sm:grid-cols-2">
-                <Input placeholder="Project Name" value={proj.name} onChange={(e) => { const u = [...profile.projects]; u[i] = { ...u[i], name: e.target.value }; updateField("projects", u); }} />
+                <Input placeholder="Project Name" value={proj.name} onChange={(e) => { const u = [...profile.projects]; u[i] = { ...u[i], name: e.target.value }; updateField("projects", u); }} disabled={!isEditing} />
                 <div className="flex gap-2">
-                  <Input placeholder="Project URL" value={proj.url} onChange={(e) => { const u = [...profile.projects]; u[i] = { ...u[i], url: e.target.value }; updateField("projects", u); }} />
-                  <Button variant="ghost" size="icon" onClick={() => updateField("projects", profile.projects.filter((_, idx) => idx !== i))} className="text-destructive"><X className="h-4 w-4" /></Button>
+                  <Input placeholder="Project URL" value={proj.url} onChange={(e) => { const u = [...profile.projects]; u[i] = { ...u[i], url: e.target.value }; updateField("projects", u); }} disabled={!isEditing} />
+                  <Button variant="ghost" size="icon" onClick={() => updateField("projects", profile.projects.filter((_, idx) => idx !== i))} disabled={!isEditing} className="text-destructive"><X className="h-4 w-4" /></Button>
                 </div>
               </div>
-              <Textarea placeholder="Project description" value={proj.description} onChange={(e) => { const u = [...profile.projects]; u[i] = { ...u[i], description: e.target.value }; updateField("projects", u); }} />
+              <Textarea placeholder="Project description" value={proj.description} onChange={(e) => { const u = [...profile.projects]; u[i] = { ...u[i], description: e.target.value }; updateField("projects", u); }} disabled={!isEditing}/>
             </div>
           ))}
         </CardContent>
@@ -347,18 +408,18 @@ const ProfileBuilder = () => {
       <Card>
         <CardHeader className="flex flex-row justify-between items-center">
           <CardTitle className="flex gap-2 items-center"><Award className="h-5 w-5" /> Certifications</CardTitle>
-          <Button variant="outline" size="sm" onClick={() => updateField("certifications", [...profile.certifications, { name: "", issuer: "", year: "", credentialUrl: "" }])}><Plus className="h-4 w-4 mr-1" /> Add</Button>
+          <Button variant="outline" size="sm" disabled={!isEditing} onClick={() => updateField("certifications", [...profile.certifications, { name: "", issuer: "", year: "", credentialUrl: "" }])}><Plus className="h-4 w-4 mr-1" /> Add</Button>
         </CardHeader>
         <CardContent className="space-y-4">
           {profile.certifications.length === 0 && <p className="text-sm text-muted-foreground">No certifications added yet</p>}
           {profile.certifications.map((cert, i) => (
             <div key={i} className="grid gap-3 rounded-lg border border-border p-4 sm:grid-cols-2">
-              <Input placeholder="Certification Name" value={cert.name} onChange={(e) => { const u = [...profile.certifications]; u[i] = { ...u[i], name: e.target.value }; updateField("certifications", u); }} />
-              <Input placeholder="Issuing Organization" value={cert.issuer} onChange={(e) => { const u = [...profile.certifications]; u[i] = { ...u[i], issuer: e.target.value }; updateField("certifications", u); }} />
-              <Input placeholder="Year" value={cert.year} onChange={(e) => { const u = [...profile.certifications]; u[i] = { ...u[i], year: e.target.value }; updateField("certifications", u); }} />
+              <Input placeholder="Certification Name" value={cert.name} onChange={(e) => { const u = [...profile.certifications]; u[i] = { ...u[i], name: e.target.value }; updateField("certifications", u); }} disabled={!isEditing}/>
+              <Input placeholder="Issuing Organization" value={cert.issuer} onChange={(e) => { const u = [...profile.certifications]; u[i] = { ...u[i], issuer: e.target.value }; updateField("certifications", u); }} disabled={!isEditing} />
+              <Input placeholder="Year" value={cert.year} onChange={(e) => { const u = [...profile.certifications]; u[i] = { ...u[i], year: e.target.value }; updateField("certifications", u); }} disabled={!isEditing} />
               <div className="flex gap-2">
-                <Input placeholder="Credential URL" value={cert.credentialUrl} onChange={(e) => { const u = [...profile.certifications]; u[i] = { ...u[i], credentialUrl: e.target.value }; updateField("certifications", u); }} />
-                <Button variant="ghost" size="icon" onClick={() => updateField("certifications", profile.certifications.filter((_, idx) => idx !== i))} className="text-destructive"><X className="h-4 w-4" /></Button>
+                <Input placeholder="Credential URL" value={cert.credentialUrl} onChange={(e) => { const u = [...profile.certifications]; u[i] = { ...u[i], credentialUrl: e.target.value }; updateField("certifications", u); }} disabled={!isEditing}/>
+                <Button variant="ghost" size="icon" onClick={() => updateField("certifications", profile.certifications.filter((_, idx) => idx !== i))} disabled={!isEditing} className="text-destructive"><X className="h-4 w-4" /></Button>
               </div>
             </div>
           ))}
@@ -369,9 +430,9 @@ const ProfileBuilder = () => {
       <Card>
         <CardHeader><CardTitle className="flex gap-2 items-center"><Globe className="h-5 w-5" /> Social Links</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          <Input placeholder="LinkedIn URL" value={profile.socials.linkedin} onChange={(e) => updateField("socials", { ...profile.socials, linkedin: e.target.value })} />
-          <Input placeholder="GitHub URL" value={profile.socials.github} onChange={(e) => updateField("socials", { ...profile.socials, github: e.target.value })} />
-          <Input placeholder="Portfolio URL" value={profile.socials.portfolio} onChange={(e) => updateField("socials", { ...profile.socials, portfolio: e.target.value })} />
+          <Input placeholder="LinkedIn URL" value={profile.socials.linkedin} onChange={(e) => updateField("socials", { ...profile.socials, linkedin: e.target.value })} disabled={!isEditing}/>
+          <Input placeholder="GitHub URL" value={profile.socials.github} onChange={(e) => updateField("socials", { ...profile.socials, github: e.target.value })} disabled={!isEditing} />
+          <Input placeholder="Portfolio URL" value={profile.socials.portfolio} onChange={(e) => updateField("socials", { ...profile.socials, portfolio: e.target.value })} disabled={!isEditing} />
         </CardContent>
       </Card>
     </motion.div>

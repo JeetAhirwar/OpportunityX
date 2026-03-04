@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import api from "@/lib/api"; // or wherever your axios instance is
 
 interface OnboardingModalProps {
   open: boolean;
@@ -69,11 +70,55 @@ const OnboardingModal = ({ open, onComplete }: OnboardingModalProps) => {
     return true;
   };
 
-  const handleFinish = () => {
-    // API call: api.post("/candidate/onboarding", { profile, skills, preferences: { selectedTypes, selectedModes, selectedIndustries, salaryMin } })
+const handleFinish = async () => {
+  try {
+    const formData = new FormData();
+
+    formData.append("name", "User");
+    formData.append("title", profile.headline);
+    formData.append("location", profile.location);
+    formData.append("phone", profile.phone.replace(/\D/g, ""));
+    formData.append("bio", "Profile created via onboarding. Will update later.");
+    formData.append("candidateType", "fresher");
+
+    // skills array send properly
+    const finalSkills = skills.length > 0 ? skills : ["Beginner"];
+    finalSkills.forEach((skill) => {
+      formData.append("skills", skill);
+    });
+
+    // empty arrays (must stringify)
+    formData.append("education", JSON.stringify([]));
+    formData.append("experience", JSON.stringify([]));
+    formData.append("projects", JSON.stringify([]));
+    formData.append("certifications", JSON.stringify([]));
+
+    formData.append(
+      "socials",
+      JSON.stringify({
+        linkedin: "",
+        github: "",
+        portfolio: "",
+      })
+    );
+
+    // 🔥 IMPORTANT PART
+    if (resumeFile) {
+      formData.append("resume", resumeFile);
+    }
+
+    await api.put("/api/candidate/profile", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
     localStorage.setItem("ox_onboarding_complete", "true");
     onComplete();
-  };
+  } catch (error: any) {
+    console.error("Onboarding save error:", error.response?.data || error.message);
+  }
+};
 
   return (
     <Dialog open={open} onOpenChange={() => {}}>
