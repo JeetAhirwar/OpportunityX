@@ -2,19 +2,17 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
-import { Eye, EyeOff, Mail, Lock, Briefcase, ArrowRight, User, Building2, Shield } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, Briefcase, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { login, setUser } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -30,20 +28,6 @@ const Login = () => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const demoLogin = (role: "candidate" | "recruiter" | "admin") => {
-    const demoUser = {
-      id: `demo-${role}`,
-      name: role === "admin" ? "Demo Admin" : role === "recruiter" ? "Demo Recruiter" : "Demo Candidate",
-      email: `${role}@demo.ox`,
-      role,
-    };
-    localStorage.setItem("token", "demo-token");
-    localStorage.setItem("ox_user", JSON.stringify(demoUser));
-    setUser(demoUser);
-    toast({ title: `Signed in as ${role}`, description: "Demo access — no backend required." });
-    navigate(`/${role}`);
   };
 
   return (
@@ -102,26 +86,6 @@ const Login = () => {
             Don't have an account?{" "}
             <Link to="/register" className="font-medium text-primary hover:underline">Create one</Link>
           </p>
-
-          <div className="mt-8">
-            <div className="relative mb-4">
-              <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">Demo access (no backend)</span>
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              <Button type="button" variant="outline" size="sm" onClick={() => demoLogin("candidate")}>
-                <User className="mr-1 h-4 w-4" /> Candidate
-              </Button>
-              <Button type="button" variant="outline" size="sm" onClick={() => demoLogin("recruiter")}>
-                <Building2 className="mr-1 h-4 w-4" /> Recruiter
-              </Button>
-              <Button type="button" variant="outline" size="sm" onClick={() => demoLogin("admin")}>
-                <Shield className="mr-1 h-4 w-4" /> Admin
-              </Button>
-            </div>
-          </div>
         </motion.div>
       </div>
     </div>
