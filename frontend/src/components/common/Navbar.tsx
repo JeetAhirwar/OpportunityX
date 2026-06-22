@@ -26,12 +26,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useChat } from "@/features/chat/ChatContext";
 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
+  const { unreadMessages, unreadNotifications } = useChat();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -51,6 +53,8 @@ const Navbar = () => {
       default: return "/";
     }
   };
+  const messagesLink = user?.role === "recruiter" ? "/recruiter/chat" : "/candidate/chat";
+  const notificationsLink = user?.role === "recruiter" ? "/recruiter/notifications" : user?.role === "admin" ? "/admin/notifications" : "/candidate/notifications";
 
   return (
     <nav className="sticky top-0 z-50 glass border-b border-border/50">
@@ -87,16 +91,19 @@ const Navbar = () => {
           {isAuthenticated ? (
             <>
               <Button variant="ghost" size="icon" className="relative rounded-full" asChild>
-                <Link to="/notifications">
+                <Link to={notificationsLink}>
                   <Bell className="h-4 w-4" />
-                  <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-destructive" />
+                  {unreadNotifications > 0 && <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] text-destructive-foreground">{Math.min(unreadNotifications, 99)}</span>}
                 </Link>
               </Button>
-              <Button variant="ghost" size="icon" className="rounded-full" asChild>
-                <Link to="/chat">
-                  <MessageSquare className="h-4 w-4" />
-                </Link>
-              </Button>
+              {user?.role !== "admin" && (
+                <Button variant="ghost" size="icon" className="relative rounded-full" asChild>
+                  <Link to={messagesLink}>
+                    <MessageSquare className="h-4 w-4" />
+                    {unreadMessages > 0 && <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] text-primary-foreground">{Math.min(unreadMessages, 99)}</span>}
+                  </Link>
+                </Button>
+              )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="gap-2 rounded-full pl-2 pr-3">

@@ -1,5 +1,11 @@
 ﻿const Job = require("../models/job.model");
+const mongoose = require("mongoose");
 
+const listFilter = (value) =>
+  String(value || "")
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
 
 // =============================
 // Create Job (Recruiter)
@@ -111,6 +117,7 @@ exports.searchJobs = async (req, res) =>
       location,
       type,
       experience,
+      workMode,
       salaryMin,
       salaryMax,
       sort,
@@ -133,13 +140,21 @@ exports.searchJobs = async (req, res) =>
     // Job Type
     if (type)
     {
-      filter.jobType = type;
+      const types = listFilter(type);
+      filter.jobType = types.length > 1 ? { $in: types } : types[0];
     }
 
     // Experience
     if (experience)
     {
-      filter.experienceLevel = experience;
+      const levels = listFilter(experience);
+      filter.experienceLevel = levels.length > 1 ? { $in: levels } : levels[0];
+    }
+
+    if (workMode)
+    {
+      const modes = listFilter(workMode);
+      filter.workMode = modes.length > 1 ? { $in: modes } : modes[0];
     }
 
     // Salary Range (Fixed Properly)
@@ -195,6 +210,14 @@ exports.getJobById = async (req, res) =>
 {
   try
   {
+    if (!mongoose.isValidObjectId(req.params.id))
+    {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid job ID",
+      });
+    }
+
     const job = await Job.findByIdAndUpdate(
       req.params.id,
       { $inc: { views: 1 } },

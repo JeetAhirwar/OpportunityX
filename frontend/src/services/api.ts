@@ -45,20 +45,33 @@ class ApiClient {
     return data;
   }
 
+  private serializeBody(body?: unknown): BodyInit | undefined {
+    if (body === undefined || body === null) return undefined;
+    if (
+      body instanceof FormData ||
+      body instanceof URLSearchParams ||
+      body instanceof Blob ||
+      typeof body === "string"
+    ) {
+      return body;
+    }
+    return JSON.stringify(body);
+  }
+
   get<T>(endpoint: string, options?: ApiOptions) {
     return this.request<T>(endpoint, { method: "GET", ...options });
   }
 
   post<T>(endpoint: string, body?: unknown, options?: ApiOptions) {
-    return this.request<T>(endpoint, { method: "POST", body: body ? JSON.stringify(body) : undefined, ...options });
+    return this.request<T>(endpoint, { method: "POST", body: this.serializeBody(body), ...options });
   }
 
   put<T>(endpoint: string, body?: unknown, options?: ApiOptions) {
-    return this.request<T>(endpoint, { method: "PUT", body: body ? JSON.stringify(body) : undefined, ...options });
+    return this.request<T>(endpoint, { method: "PUT", body: this.serializeBody(body), ...options });
   }
 
   patch<T>(endpoint: string, body?: unknown, options?: ApiOptions) {
-    return this.request<T>(endpoint, { method: "PATCH", body: body ? JSON.stringify(body) : undefined, ...options });
+    return this.request<T>(endpoint, { method: "PATCH", body: this.serializeBody(body), ...options });
   }
 
   delete<T>(endpoint: string, options?: ApiOptions) {

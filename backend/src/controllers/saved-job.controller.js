@@ -1,8 +1,16 @@
 ﻿const SavedJob = require("../models/saved-job.model");
+const Job = require("../models/job.model");
+const mongoose = require("mongoose");
 
 // Toggle save
 exports.toggleSave = async (req, res) => {
   try {
+    if (!mongoose.isValidObjectId(req.params.jobId)) {
+      return res.status(400).json({ message: "Invalid job ID" });
+    }
+    const job = await Job.findOne({ _id: req.params.jobId, status: "active" }).select("_id");
+    if (!job) return res.status(404).json({ message: "Job not found" });
+
     const existing = await SavedJob.findOne({ user: req.user._id, job: req.params.jobId });
     if (existing) {
       await existing.deleteOne();

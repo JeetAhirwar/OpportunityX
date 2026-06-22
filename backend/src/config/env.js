@@ -19,5 +19,9 @@ module.exports = Object.freeze({
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean),
-  clientUrl: process.env.CLIENT_URL || "http://localhost:5173",
+  clientUrl: process.env.CLIENT_URL || "http://localhost:8080",
+  socketCorsOrigins: (process.env.SOCKET_CORS_ORIGIN || process.env.CORS_ORIGIN || "http://localhost:8080")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean),
 });

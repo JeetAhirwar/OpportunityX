@@ -51,29 +51,24 @@ export interface Profile {
 }
 
 export interface Job {
-  id: string | number;
+  _id: string;
   title: string;
   company: string;
   location: string;
-  type: string;
-  salary: string;
-  remote: boolean;
-  experience: string;
-  posted: string;
-  logo: string;
-  tags: string[];
-  description?: string;
-  responsibilities?: string[];
-  requirements?: string[];
-  benefits?: string[];
-  applicants?: number;
-  companyInfo?: {
-    size: string;
-    industry: string;
-    founded: string;
-    website: string;
-    about: string;
-  };
+  description: string;
+  salary: { min: number; max: number; currency: string };
+  skills: string[];
+  experienceLevel: "junior" | "mid" | "senior" | "lead";
+  jobType: "full-time" | "part-time" | "contract" | "internship";
+  workMode: "remote" | "hybrid" | "onsite";
+  deadline?: string;
+  status: "active" | "closed" | "draft" | "pending";
+  postedBy?: { _id?: string; name: string; email?: string };
+  applicantCount: number;
+  views: number;
+  featured?: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Application {

@@ -8,6 +8,7 @@ applications with shared project documentation.
 
 - Frontend: React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui, React Query
 - Backend: Node.js, Express 5, MongoDB, Mongoose, JWT, Multer
+- Real-time messaging: Socket.IO with application-scoped candidate/recruiter conversations
 - Tooling: npm, ESLint, Vitest
 
 ## Structure
@@ -40,6 +41,19 @@ npm run dev
 
 The recommended local API is `http://localhost:8000`; the frontend remains on
 Vite's configured port `8080`.
+
+## Candidate/recruiter chat
+
+Chat uses the existing OpportunityX JWT and MongoDB. Set `SOCKET_CORS_ORIGIN`
+in `backend/.env` and `VITE_SOCKET_URL` in `frontend/.env`. A conversation can
+only be created from an application: candidates may message the recruiter for
+a job they applied to, and recruiters may message applicants to their own
+jobs. The backend enforces these rules for both REST and Socket.IO actions.
+
+To test locally, apply to a job as a candidate, open Recruiter → Applicants as
+the owning recruiter, click the message button, and exchange messages between
+two browser sessions. History, typing, online state, seen state, unread badges,
+and message notifications persist/update through the merged backend.
 
 ## Root commands
 

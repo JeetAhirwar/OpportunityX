@@ -13,7 +13,9 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/utils/cn";
-import api from "@/services/api"; // or wherever your axios instance is
+import { useNavigate } from "react-router-dom";
+import api from "@/services/api";
+import { useAuth } from "@/store/AuthContext";
 
 interface OnboardingModalProps {
   open: boolean;
@@ -35,6 +37,8 @@ const INDUSTRIES = [
 ];
 
 const OnboardingModal = ({ open, onComplete }: OnboardingModalProps) => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [step, setStep] = useState(0);
   const [profile, setProfile] = useState({ headline: "", location: "", phone: "" });
   const [resumeFile, setResumeFile] = useState<File | null>(null);
@@ -44,8 +48,16 @@ const OnboardingModal = ({ open, onComplete }: OnboardingModalProps) => {
   const [selectedModes, setSelectedModes] = useState<string[]>([]);
   const [selectedIndustries, setSelectedIndustries] = useState<string[]>([]);
   const [salaryMin, setSalaryMin] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   const progress = ((step + 1) / steps.length) * 100;
+  const phoneDigits = profile.phone.replace(/\D/g, "");
+  const normalizedPhone = phoneDigits.slice(-10);
+  const isProfileStepValid =
+    profile.headline.trim().length > 0 &&
+    profile.location.trim().length > 0 &&
+    phoneDigits.length >= 10;
 
   const addSkill = () => {
     const trimmed = skillInput.trim();
@@ -64,20 +76,22 @@ const OnboardingModal = ({ open, onComplete }: OnboardingModalProps) => {
   };
 
   const canProceed = () => {
-    if (step === 0) return profile.headline.length > 0;
+    if (step === 0) return isProfileStepValid;
     if (step === 1) return true; // resume is optional
     if (step === 2) return selectedTypes.length > 0;
     return true;
   };
 
 const handleFinish = async () => {
+  setIsSaving(true);
+  setSaveError("");
   try {
     const formData = new FormData();
 
-    formData.append("name", "User");
+    formData.append("name", user?.name || "User");
     formData.append("title", profile.headline);
     formData.append("location", profile.location);
-    formData.append("phone", profile.phone.replace(/\D/g, ""));
+    formData.append("phone", normalizedPhone);
     formData.append("bio", "Profile created via onboarding. Will update later.");
     formData.append("candidateType", "fresher");
 
@@ -102,26 +116,30 @@ const handleFinish = async () => {
       })
     );
 
-    // ðŸ”¥ IMPORTANT PART
     if (resumeFile) {
       formData.append("resume", resumeFile);
     }
 
-    await api.put("/api/candidate/profile", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
+    await api.put("/api/candidate/profile", formData);
 
     localStorage.setItem("ox_onboarding_complete", "true");
     onComplete();
-  } catch (error: any) {
-    console.error("Onboarding save error:", error.response?.data || error.message);
+    navigate("/candidate/dashboard", { replace: true });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unable to save your profile.";
+    setSaveError(message);
+    console.error("Onboarding save error:", message);
+  } finally {
+    setIsSaving(false);
   }
 };
 
   return (
-    <Dialog open={open} onOpenChange={() => {}}>
+    <Dialog open={open} onOpenChange={(nextOpen) => {
+      if (!nextOpen && localStorage.getItem("ox_onboarding_complete") === "true") {
+        onComplete();
+      }
+    }}>
       <DialogContent className="max-w-xl gap-0 overflow-hidden p-0 sm:rounded-2xl [&>button]:hidden">
         {/* Progress */}
         <div className="px-6 pt-6">
@@ -159,11 +177,11 @@ const handleFinish = async () => {
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.2 }}
             >
-              {/* Step 0 â€” Profile basics */}
+              {/* Step 0 — Profile basics */}
               {step === 0 && (
                 <div className="space-y-5">
                   <DialogHeader>
-                    <DialogTitle className="font-display text-xl">Welcome to OpportunityX! ðŸŽ‰</DialogTitle>
+                    <DialogTitle className="font-display text-xl">Welcome to OpportunityX! 🎉</DialogTitle>
                     <DialogDescription>Let's set up your profile so recruiters can find you.</DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
@@ -172,28 +190,28 @@ const handleFinish = async () => {
                       <Input
                         placeholder="e.g. Senior React Developer"
                         value={profile.headline}
-                        onChange={(e) => setProfile({ ...profile, headline: e.target.value })}
+                        onChange={(e) => setProfile((current) => ({ ...current, headline: e.target.value }))}
                       />
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-2">
-                        <Label>Location</Label>
+                        <Label>Location *</Label>
                         <div className="relative">
                           <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                           <Input
                             className="pl-9"
                             placeholder="City, Country"
                             value={profile.location}
-                            onChange={(e) => setProfile({ ...profile, location: e.target.value })}
+                            onChange={(e) => setProfile((current) => ({ ...current, location: e.target.value }))}
                           />
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <Label>Phone</Label>
+                        <Label>Phone *</Label>
                         <Input
                           placeholder="+1 234 567 890"
                           value={profile.phone}
-                          onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                          onChange={(e) => setProfile((current) => ({ ...current, phone: e.target.value }))}
                         />
                       </div>
                     </div>
@@ -227,7 +245,7 @@ const handleFinish = async () => {
                 </div>
               )}
 
-              {/* Step 1 â€” Resume */}
+              {/* Step 1 — Resume */}
               {step === 1 && (
                 <div className="space-y-5">
                   <DialogHeader>
@@ -261,7 +279,7 @@ const handleFinish = async () => {
                       <>
                         <Upload className="mb-3 h-10 w-10 text-muted-foreground" />
                         <p className="font-medium">Drop your resume here</p>
-                        <p className="mt-1 text-xs text-muted-foreground">PDF, DOC, DOCX Â· Max 10MB</p>
+                        <p className="mt-1 text-xs text-muted-foreground">PDF, DOC, DOCX · Max 10MB</p>
                       </>
                     )}
                   </div>
@@ -275,7 +293,7 @@ const handleFinish = async () => {
                 </div>
               )}
 
-              {/* Step 2 â€” Job Preferences */}
+              {/* Step 2 — Job Preferences */}
               {step === 2 && (
                 <div className="space-y-5">
                   <DialogHeader>
@@ -341,18 +359,19 @@ const handleFinish = async () => {
                 </div>
               )}
 
-              {/* Step 3 â€” Complete */}
+              {/* Step 3 — Complete */}
               {step === 3 && (
                 <div className="flex flex-col items-center justify-center space-y-4 py-8 text-center">
                   <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
                     <Sparkles className="h-8 w-8 text-primary" />
                   </div>
                   <DialogHeader className="items-center">
-                    <DialogTitle className="font-display text-2xl">You're All Set! ðŸš€</DialogTitle>
+                    <DialogTitle className="font-display text-2xl">You're All Set! 🚀</DialogTitle>
                     <DialogDescription className="max-w-sm">
                       Your profile is ready. Start exploring opportunities and let our AI match you with the best jobs.
                     </DialogDescription>
                   </DialogHeader>
+                  {saveError && <p className="text-sm text-destructive">{saveError}</p>}
                 </div>
               )}
             </motion.div>
@@ -380,8 +399,8 @@ const handleFinish = async () => {
               </Button>
             </div>
           ) : (
-            <Button size="sm" className="gradient-primary border-0" onClick={handleFinish}>
-              Go to Dashboard <ChevronRight className="ml-1 h-4 w-4" />
+            <Button size="sm" className="gradient-primary border-0" onClick={handleFinish} disabled={isSaving}>
+              {isSaving ? "Saving..." : "Go to Dashboard"} <ChevronRight className="ml-1 h-4 w-4" />
             </Button>
           )}
         </div>

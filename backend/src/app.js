@@ -17,6 +17,7 @@ app.use("/api/jobs", require("./routes/job.routes"));
 app.use("/api/applications", require("./routes/application.routes"));
 app.use("/api/saved-jobs", require("./routes/saved-job.routes"));
 app.use("/api/notifications", require("./routes/notification.routes"));
+app.use("/api/chat", require("./routes/chat.routes"));
 app.use("/api/recruiter/notes", require("./routes/recruiter-note.routes"));
 app.use("/api/admin", require("./routes/admin.routes"));
 app.use("/api/public", require("./routes/public.routes"));

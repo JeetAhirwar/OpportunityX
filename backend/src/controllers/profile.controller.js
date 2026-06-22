@@ -13,9 +13,17 @@ exports.saveProfile = async (req, res) =>
             req.body.resumeUrl = req.file.path;
         }
 
-        if (req.body.education)
+        for (const field of ["education", "experience", "projects", "certifications"])
         {
-            req.body.education = JSON.parse(req.body.education);
+            if (typeof req.body[field] === "string")
+            {
+                req.body[field] = JSON.parse(req.body[field]);
+            }
+        }
+
+        if (typeof req.body.socials === "string")
+        {
+            req.body.socials = JSON.parse(req.body.socials);
         }
 
         if (existingProfile)

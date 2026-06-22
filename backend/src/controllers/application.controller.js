@@ -6,6 +6,9 @@ const Notification = require("../models/notification.model");
 exports.apply = async (req, res) => {
   try {
     const { jobId } = req.params;
+    const job = await Job.findOne({ _id: jobId, status: "active" });
+    if (!job) return res.status(404).json({ message: "Job not found or no longer active" });
+
     const existing = await Application.findOne({ job: jobId, candidate: req.user._id });
 
     if (existing && existing.status !== "withdrawn") {
@@ -77,24 +80,41 @@ exports.getApplicants = async (req, res) => {
   }
 };
 
+exports.getRecruiterApplicants = async (req, res) => {
+  try {
+    const jobs = await Job.find({ postedBy: req.user._id }).select("_id title company");
+    const jobIds = jobs.map((job) => job._id);
+    const applicants = await Application.find({ job: { $in: jobIds } })
+      .populate("candidate", "name email")
+      .populate("job", "title company location")
+      .sort({ createdAt: -1 });
+    res.json(applicants);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // Update application status (recruiter)
 exports.updateStatus = async (req, res) => {
   try {
-    const application = await Application.findByIdAndUpdate(
-      req.params.id,
-      { status: req.body.status },
-      { new: true }
-    ).populate("job", "title company");
+    const existing = await Application.findById(req.params.id).populate("job");
+    if (!existing || String(existing.job?.postedBy) !== String(req.user._id)) {
+      return res.status(404).json({ message: "Application not found" });
+    }
+    existing.status = req.body.status;
+    await existing.save();
+    const application = await existing.populate("job", "title company");
 
     if (!application) return res.status(404).json({ message: "Application not found" });
 
     // Notify candidate
-    await Notification.create({
+    const notification = await Notification.create({
       user: application.candidate,
       title: "Application Update",
       message: `Your application for ${application.job?.title} has been ${req.body.status}.`,
       type: req.body.status === "rejected" ? "error" : "success",
     });
+    req.app.get("io")?.to(String(application.candidate)).emit("notification_created", notification);
 
     res.json(application);
   } catch (error) {

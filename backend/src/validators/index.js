@@ -88,7 +88,19 @@ const profileRules = [
   body("phone").matches(/^[0-9]{10}$/).withMessage("Enter valid 10-digit phone number"),
   body("location").trim().notEmpty().withMessage("Location is required"),
   body("bio").trim().isLength({ min: 20 }).withMessage("Bio must be at least 20 characters"),
-  body("skills").isArray({ min: 1 }).withMessage("At least one skill is required"),
+  body("skills")
+    .customSanitizer((value) => {
+      if (Array.isArray(value)) return value;
+      if (typeof value !== "string") return value;
+      try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed : [value];
+      } catch {
+        return [value];
+      }
+    })
+    .isArray({ min: 1 })
+    .withMessage("At least one skill is required"),
   handleValidation,
 ];
 

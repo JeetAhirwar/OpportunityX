@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useAuth } from "@/store/AuthContext";
 import {
   LayoutDashboard, Users, Briefcase, BarChart3, FileText,
-  Shield, Settings, LogOut, Menu, X, UserCheck,
+  Settings, LogOut, Menu, X, UserCheck, Bell,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,6 +13,7 @@ import RecruiterApproval from "@/features/admin/RecruiterApproval";
 import JobModeration from "@/features/admin/JobModeration";
 import PlatformAnalytics from "@/features/admin/PlatformAnalytics";
 import SettingsPage from "@/features/settings/SettingsPage";
+import NotificationsPage from "@/features/notifications/NotificationsPage";
 import { useState } from "react";
 
 const sidebarLinks = [
@@ -21,6 +22,7 @@ const sidebarLinks = [
   { label: "Recruiter Approval", href: "/admin/approvals", icon: UserCheck },
   { label: "Job Moderation", href: "/admin/jobs", icon: Briefcase },
   { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
+  { label: "Notifications", href: "/admin/notifications", icon: Bell },
   { label: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
@@ -89,6 +91,7 @@ const AdminDashboard = () => {
               <Route path="approvals" element={<RecruiterApproval />} />
               <Route path="jobs" element={<JobModeration />} />
               <Route path="analytics" element={<PlatformAnalytics />} />
+              <Route path="notifications" element={<NotificationsPage />} />
               <Route path="settings" element={<SettingsPage />} />
               <Route path="*" element={<DashboardHome />} />
             </Routes>
