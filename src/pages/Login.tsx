@@ -7,14 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-
-
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { login, setUser } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -30,20 +28,6 @@ const Login = () => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const demoLogin = (role: "candidate" | "recruiter" | "admin") => {
-    const demoUser = {
-      id: `demo-${role}`,
-      name: role === "admin" ? "Demo Admin" : role === "recruiter" ? "Demo Recruiter" : "Demo Candidate",
-      email: `${role}@demo.ox`,
-      role,
-    };
-    localStorage.setItem("token", "demo-token");
-    localStorage.setItem("ox_user", JSON.stringify(demoUser));
-    setUser(demoUser);
-    toast({ title: `Signed in as ${role}`, description: "Demo access — no backend required." });
-    navigate(`/${role}`);
   };
 
   return (
