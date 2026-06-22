@@ -20,6 +20,13 @@ module.exports = Object.freeze({
     .map((origin) => origin.trim())
     .filter(Boolean),
   clientUrl: process.env.CLIENT_URL || "http://localhost:8080",
+  smtp: Object.freeze({
+    host: process.env.SMTP_HOST || "",
+    port: Number(process.env.SMTP_PORT || 587),
+    user: process.env.SMTP_USER || "",
+    pass: process.env.SMTP_PASS || "",
+  }),
+  emailFrom: process.env.EMAIL_FROM || "OpportunityX <no-reply@opportunityx.local>",
   socketCorsOrigins: (process.env.SOCKET_CORS_ORIGIN || process.env.CORS_ORIGIN || "http://localhost:8080")
     .split(",")
     .map((origin) => origin.trim())

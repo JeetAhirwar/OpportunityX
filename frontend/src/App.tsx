@@ -13,7 +13,7 @@ import NotFound from "./pages/NotFound";
 import Login from "./features/auth/Login";
 import Register from "./features/auth/Register";
 import ForgotPassword from "./features/auth/ForgotPassword";
-import OTPVerification from "./features/auth/OTPVerification";
+import ResetPassword from "./features/auth/ResetPassword";
 import Jobs from "./features/jobs/Jobs";
 import JobDetail from "./features/jobs/JobDetail";
 import PublicProfile from "./pages/PublicProfile";
@@ -38,7 +38,7 @@ const App = () => (
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/verify-otp" element={<OTPVerification />} />
+              <Route path="/reset-password/:token" element={<ResetPassword />} />
               <Route path="/jobs" element={<Jobs />} />
               <Route path="/jobs/:id" element={<JobDetail />} />
               <Route path="/profile/:username" element={<PublicProfile />} />

@@ -18,9 +18,9 @@ const ForgotPassword = () => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      await api.post("/auth/forgot-password", { email }, { skipAuth: true });
+      const response = await api.post<{ message: string }>("/auth/forgot-password", { email }, { skipAuth: true });
       setSent(true);
-      toast({ title: "Email sent!", description: "Check your inbox for a reset link." });
+      toast({ title: "Request received", description: response.message });
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
@@ -61,7 +61,7 @@ const ForgotPassword = () => {
               <Mail className="h-8 w-8 text-success" />
             </div>
             <h1 className="mb-2 font-display text-2xl font-bold">Check Your Email</h1>
-            <p className="mb-6 text-sm text-muted-foreground">We've sent a password reset link to <strong>{email}</strong></p>
+            <p className="mb-6 text-sm text-muted-foreground">If an account exists for <strong>{email}</strong>, a reset link will arrive shortly.</p>
             <Button variant="outline" onClick={() => setSent(false)}>Resend Email</Button>
           </div>
         )}

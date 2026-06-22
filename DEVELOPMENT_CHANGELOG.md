@@ -2,6 +2,18 @@
 
 ## 2026-06-22
 
+- Completed Phase 2 authentication stability and session hardening.
+- Added authenticated `GET /api/auth/me` session validation and safe user
+  responses for register, login, and session restore.
+- Added inactive-account login/session rejection and `lastLogin` updates while
+  keeping verification status non-blocking until email verification exists.
+- Added authenticated `POST /api/auth/logout` and frontend logout coordination.
+- Added generic-response forgot-password and hashed, expiring reset-token
+  handling with SMTP email delivery.
+- Added `/reset-password/:token` and connected password reset submission.
+- Added role-based login/register redirects and wrong-role dashboard redirects.
+- Removed the broken public OTP route until a complete verification flow is
+  implemented.
 - Completed Phase 1 public job flow integration.
 - Replaced the static `/jobs` dataset with `GET /api/jobs`, including backend
   pagination, keyword, location, job type, experience, work mode, salary, and

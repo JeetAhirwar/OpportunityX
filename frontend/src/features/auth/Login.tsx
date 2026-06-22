@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { getDashboardPath } from "@/utils/authRoutes";
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -20,9 +21,9 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      await login(email, password);
+      const authenticatedUser = await login(email, password);
       toast({ title: "Welcome back!", description: "You've been logged in successfully." });
-      navigate("/");
+      navigate(getDashboardPath(authenticatedUser.role), { replace: true });
     } catch (error: any) {
       toast({ title: "Login failed", description: error.message || "Invalid credentials", variant: "destructive" });
     } finally {

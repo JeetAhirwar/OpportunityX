@@ -2,11 +2,12 @@
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "@/store/AuthContext";
-import { Eye, EyeOff, Mail, Lock, User, Briefcase, ArrowRight, Users, Shield } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User, Briefcase, ArrowRight, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { getDashboardPath } from "@/utils/authRoutes";
 
 const roles = [
   { value: "candidate", label: "Job Seeker", desc: "Find and apply for jobs", icon: User },
@@ -28,9 +29,9 @@ const Register = () => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      await register({ name, email, password, role });
+      const registeredUser = await register({ name, email, password, role });
       toast({ title: "Account created!", description: "Welcome to OpportunityX." });
-      navigate("/");
+      navigate(getDashboardPath(registeredUser.role), { replace: true });
     } catch (error: any) {
       toast({ title: "Registration failed", description: error.message, variant: "destructive" });
     } finally {

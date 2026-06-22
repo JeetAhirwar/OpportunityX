@@ -10,6 +10,7 @@ export const apiUrl = (endpoint: string) => {
 
 interface ApiOptions extends RequestInit {
   skipAuth?: boolean;
+  redirectOnUnauthorized?: boolean;
 }
 
 class ApiClient {
@@ -23,7 +24,13 @@ class ApiClient {
   }
 
   private async request<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
-    const { skipAuth = false, headers: customHeaders, body, ...rest } = options;
+    const {
+      skipAuth = false,
+      redirectOnUnauthorized = true,
+      headers: customHeaders,
+      body,
+      ...rest
+    } = options;
     const headers: Record<string, string> = { ...(customHeaders as Record<string, string>) };
 
     if (body && !(body instanceof FormData)) headers["Content-Type"] = "application/json";
@@ -35,7 +42,7 @@ class ApiClient {
     const response = await fetch(apiUrl(endpoint), { headers, body, ...rest });
     if (response.status === 401) {
       this.clearToken();
-      window.location.href = "/login";
+      if (redirectOnUnauthorized) window.location.href = "/login";
       throw new Error("Session expired. Please login again.");
     }
 
@@ -102,9 +109,19 @@ class ApiClient {
     return data;
   }
 
-  logout() {
-    this.clearToken();
-    window.location.href = "/login";
+  hasToken() {
+    return Boolean(this.getToken());
+  }
+
+  async logout() {
+    try {
+      if (this.getToken()) {
+        await this.post("/auth/logout", undefined, { redirectOnUnauthorized: false });
+      }
+    } finally {
+      this.clearToken();
+      window.location.href = "/login";
+    }
   }
 }
 

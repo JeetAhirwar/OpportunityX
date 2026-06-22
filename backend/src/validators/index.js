@@ -37,6 +37,17 @@ const loginRules = [
   handleValidation,
 ];
 
+const forgotPasswordRules = [
+  body("email").trim().isEmail().withMessage("Valid email is required").normalizeEmail(),
+  handleValidation,
+];
+
+const resetPasswordRules = [
+  body("token").isString().notEmpty().withMessage("Reset token is required"),
+  body("password").isLength({ min: 8 }).withMessage("Password must be at least 8 characters"),
+  handleValidation,
+];
+
 // ──────────────────────────────────────────
 // Job validators
 // ──────────────────────────────────────────
@@ -123,6 +134,8 @@ const mongoIdParam = [
 module.exports = {
   registerRules,
   loginRules,
+  forgotPasswordRules,
+  resetPasswordRules,
   createJobRules,
   applyRules,
   updateStatusRules,
