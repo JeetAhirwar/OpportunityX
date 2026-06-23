@@ -88,7 +88,14 @@ export const useApply = () => {
 export const useSavedJobs = (enabled = true) =>
   useQuery({
     queryKey: ["savedJobs"],
-    queryFn: () => api.get<Job[]>("/saved-jobs"),
+    queryFn: async () => {
+      const response = await api.get<unknown>("/saved-jobs");
+      const root = asRecord(response);
+      if (Array.isArray(response)) return response as Job[];
+      if (Array.isArray(root.data)) return root.data as Job[];
+      if (Array.isArray(root.jobs)) return root.jobs as Job[];
+      return [];
+    },
     enabled,
   });
 

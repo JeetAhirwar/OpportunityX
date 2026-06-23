@@ -14,30 +14,40 @@ import JobModeration from "@/features/admin/JobModeration";
 import PlatformAnalytics from "@/features/admin/PlatformAnalytics";
 import SettingsPage from "@/features/settings/SettingsPage";
 import NotificationsPage from "@/features/notifications/NotificationsPage";
-import { useState } from "react";
+import AdminApplications from "@/features/admin/AdminApplications";
+import AdminReports from "@/features/admin/AdminReports";
+import { useEffect, useState } from "react";
+import { AdminAnalytics, getAdminAnalytics } from "@/features/admin/adminApi";
 
 const sidebarLinks = [
   { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
   { label: "Users", href: "/admin/users", icon: Users },
   { label: "Recruiter Approval", href: "/admin/approvals", icon: UserCheck },
   { label: "Job Moderation", href: "/admin/jobs", icon: Briefcase },
+  { label: "Applications", href: "/admin/applications", icon: FileText },
   { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
+  { label: "Reports", href: "/admin/reports", icon: FileText },
   { label: "Notifications", href: "/admin/notifications", icon: Bell },
   { label: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
-const DashboardHome = () => (
+const DashboardHome = () => {
+  const [data, setData] = useState<AdminAnalytics | null>(null);
+  const [error, setError] = useState("");
+  useEffect(() => { getAdminAnalytics().then(setData).catch((requestError) => setError(requestError instanceof Error ? requestError.message : "Could not load dashboard")); }, []);
+  return (
   <div className="space-y-6">
     <div>
       <h1 className="font-display text-2xl font-bold">Admin Dashboard</h1>
       <p className="text-muted-foreground">Platform overview and management</p>
     </div>
+    {!data && !error ? <div className="p-6 text-sm text-muted-foreground">Loading dashboard...</div> : error ? <Card><CardContent className="p-6 text-sm text-destructive">{error}</CardContent></Card> : data && <>
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {[
-        { label: "Total Users", value: "24.5K", icon: Users },
-        { label: "Active Jobs", value: "3.2K", icon: Briefcase },
-        { label: "Applications", value: "89K", icon: FileText },
-        { label: "Revenue", value: "$142K", icon: BarChart3 },
+        { label: "Total Users", value: data.totalUsers, icon: Users },
+        { label: "Active Jobs", value: data.activeJobs, icon: Briefcase },
+        { label: "Applications", value: data.totalApplications, icon: FileText },
+        { label: "Pending Approvals", value: data.pendingApprovals, icon: UserCheck },
       ].map((stat) => (
         <Card key={stat.label}>
           <CardContent className="p-5">
@@ -54,8 +64,15 @@ const DashboardHome = () => (
         </Card>
       ))}
     </div>
+    <div className="grid gap-6 lg:grid-cols-3">
+      <Card><CardContent className="space-y-3 p-5"><h2 className="font-semibold">Recent Users</h2>{data.recentUsers.map((item) => <div key={item._id} className="rounded-lg bg-secondary/50 p-3"><p className="text-sm font-medium">{item.name}</p><p className="text-xs text-muted-foreground">{item.role} · {item.email}</p></div>)}</CardContent></Card>
+      <Card><CardContent className="space-y-3 p-5"><h2 className="font-semibold">Recent Jobs</h2>{data.recentJobs.map((item) => <div key={item._id} className="rounded-lg bg-secondary/50 p-3"><p className="text-sm font-medium">{item.title}</p><p className="text-xs text-muted-foreground">{item.company} · {item.status}</p></div>)}</CardContent></Card>
+      <Card><CardContent className="space-y-3 p-5"><h2 className="font-semibold">Recent Applications</h2>{data.recentApplications.map((item) => <div key={item._id} className="rounded-lg bg-secondary/50 p-3"><p className="text-sm font-medium">{item.candidate?.name || "Candidate unavailable"}</p><p className="text-xs text-muted-foreground">{item.job?.title || "Job unavailable"} · {item.status}</p></div>)}</CardContent></Card>
+    </div>
+    </>}
   </div>
-);
+  );
+};
 
 const AdminDashboard = () => {
   const { logout } = useAuth();
@@ -90,7 +107,9 @@ const AdminDashboard = () => {
               <Route path="users" element={<UserManagement />} />
               <Route path="approvals" element={<RecruiterApproval />} />
               <Route path="jobs" element={<JobModeration />} />
+              <Route path="applications" element={<AdminApplications />} />
               <Route path="analytics" element={<PlatformAnalytics />} />
+              <Route path="reports" element={<AdminReports />} />
               <Route path="notifications" element={<NotificationsPage />} />
               <Route path="settings" element={<SettingsPage />} />
               <Route path="*" element={<DashboardHome />} />

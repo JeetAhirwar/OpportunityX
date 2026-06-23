@@ -1,6 +1,7 @@
 ﻿const Application = require("../models/application.model");
 const Job = require("../models/job.model");
 const Notification = require("../models/notification.model");
+const mongoose = require("mongoose");
 
 // Apply to job
 exports.apply = async (req, res) => {
@@ -67,11 +68,15 @@ exports.getMyApplications = async (req, res) => {
 // Get applicants for a job (recruiter)
 exports.getApplicants = async (req, res) => {
   try {
+    if (!mongoose.isValidObjectId(req.params.jobId)) {
+      return res.status(400).json({ message: "Invalid job ID" });
+    }
     const job = await Job.findOne({ _id: req.params.jobId, postedBy: req.user._id });
     if (!job) return res.status(404).json({ message: "Job not found" });
 
     const applicants = await Application.find({ job: req.params.jobId })
       .populate("candidate", "name email")
+      .populate("job", "title company location")
       .sort({ createdAt: -1 });
 
     res.json(applicants);

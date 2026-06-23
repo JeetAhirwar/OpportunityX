@@ -4,7 +4,7 @@ import { useAuth } from "@/store/AuthContext";
 import
   {
     LayoutDashboard, User, FileText, Briefcase, Bookmark,
-    Bell, Brain, Settings, LogOut, Menu, X, MessageSquare,
+    Bell, Brain, Settings, LogOut, Menu, X, MessageSquare, Loader2,
   } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +22,10 @@ import NotificationsPage from "@/features/notifications/NotificationsPage";
 import SettingsPage from "@/features/settings/SettingsPage";
 import { useState, useEffect } from "react";
 import OnboardingModal from "@/features/onboarding/OnboardingModal";
+import { useMyApplications } from "@/hooks/useApplications";
+import { useSavedJobs } from "@/hooks/useJobs";
+import { useProfile } from "@/hooks/useProfile";
+import { formatDistanceToNow } from "date-fns";
 
 const sidebarLinks = [
   { label: "Dashboard", href: "/candidate/dashboard", icon: LayoutDashboard },
@@ -36,19 +40,31 @@ const sidebarLinks = [
   { label: "Settings", href: "/candidate/settings", icon: Settings },
 ];
 
-const DashboardHome = () =>
-{
+const DashboardHome = () => {
   const { user } = useAuth();
   const statusColors: Record<string, string> = {
-    Applied: "bg-info/10 text-info", Reviewed: "bg-warning/10 text-warning",
-    Shortlisted: "bg-accent/10 text-accent", Interview: "bg-primary/10 text-primary",
-    Offer: "bg-success/10 text-success", Rejected: "bg-destructive/10 text-destructive",
+    applied: "bg-info/10 text-info", reviewed: "bg-warning/10 text-warning",
+    shortlisted: "bg-accent/10 text-accent", interview: "bg-primary/10 text-primary",
+    offer: "bg-success/10 text-success", rejected: "bg-destructive/10 text-destructive",
+    withdrawn: "bg-muted text-muted-foreground",
   };
-  const appliedJobs = [
-    { title: "Senior React Developer", company: "TechCorp", status: "Interview", date: "2 days ago" },
-    { title: "Full Stack Engineer", company: "StartupXYZ", status: "Reviewed", date: "5 days ago" },
-    { title: "Frontend Lead", company: "ScaleUp", status: "Applied", date: "1 week ago" },
-  ];
+  const applicationsQuery = useMyApplications({ limit: 100 });
+  const savedQuery = useSavedJobs();
+  const profileQuery = useProfile();
+  const applications = applicationsQuery.data?.applications || [];
+  const savedJobs = savedQuery.data || [];
+  const profile = profileQuery.data;
+  const interviews = applications.filter((item) => item.status === "interview").length;
+  const profileFields = profile ? [
+    profile.name, profile.phone, profile.location, profile.title, profile.bio,
+    profile.resumeUrl, profile.skills?.length, profile.education?.length,
+    profile.candidateType === "fresher" || profile.experience?.length,
+    profile.socials?.linkedin || profile.socials?.github || profile.socials?.portfolio,
+  ] : [];
+  const completeness = profile ? Math.round((profileFields.filter(Boolean).length / profileFields.length) * 100) : 0;
+  const recentApplications = applications.slice(0, 3);
+  const loading = applicationsQuery.isLoading || savedQuery.isLoading || profileQuery.isLoading;
+  const hasError = applicationsQuery.isError || savedQuery.isError || profileQuery.isError;
 
   return (
     <div className="space-y-6">
@@ -56,12 +72,18 @@ const DashboardHome = () =>
         <h1 className="font-display text-2xl font-bold">Welcome back, {user?.name?.split(" ")[0] || "Candidate"}!</h1>
         <p className="text-muted-foreground">Here's an overview of your job search</p>
       </div>
+      {loading ? (
+        <div className="flex min-h-[240px] items-center justify-center rounded-xl border border-border"><Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" /> Loading your dashboard...</div>
+      ) : hasError ? (
+        <Card><CardContent className="p-6 text-sm text-destructive">Some dashboard data could not be loaded. Refresh the page to try again.</CardContent></Card>
+      ) : (
+      <>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { label: "Applied Jobs", value: "12", icon: Briefcase, change: "+3 this week" },
-          { label: "Saved Jobs", value: "8", icon: Bookmark, change: "+2 this week" },
-          { label: "Interviews", value: "3", icon: User, change: "1 upcoming" },
-          { label: "Profile Views", value: "156", icon: LayoutDashboard, change: "+24 this week" },
+          { label: "Applied Jobs", value: applicationsQuery.data?.total || 0, icon: Briefcase, change: "Total applications" },
+          { label: "Saved Jobs", value: savedJobs.length, icon: Bookmark, change: "Bookmarked jobs" },
+          { label: "Interviews", value: interviews, icon: User, change: "Current interviews" },
+          { label: "Profile Complete", value: `${completeness}%`, icon: LayoutDashboard, change: completeness === 100 ? "Profile complete" : "Keep improving" },
         ].map((stat) => (
           <Card key={stat.label}>
             <CardContent className="p-5">
@@ -69,7 +91,7 @@ const DashboardHome = () =>
                 <div>
                   <p className="text-sm text-muted-foreground">{stat.label}</p>
                   <p className="font-display text-2xl font-bold">{stat.value}</p>
-                  <p className="text-xs text-success">{stat.change}</p>
+                  <p className="text-xs text-muted-foreground">{stat.change}</p>
                 </div>
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
                   <stat.icon className="h-5 w-5 text-primary" />
@@ -83,25 +105,32 @@ const DashboardHome = () =>
         <Card>
           <CardHeader><CardTitle className="font-display text-lg">Profile Completeness</CardTitle></CardHeader>
           <CardContent>
-            <Progress value={68} className="mb-2" />
-            <p className="text-sm text-muted-foreground">68% complete â€” Add your skills and experience to stand out</p>
+            <Progress value={completeness} className="mb-2" />
+            <p className="text-sm text-muted-foreground">{completeness}% complete — {completeness < 100 ? "Add missing profile details to stand out" : "Your profile is ready"}</p>
+            {completeness < 100 && <Button variant="link" className="mt-2 h-auto p-0" asChild><Link to="/candidate/profile">Complete profile</Link></Button>}
+            {completeness === 100 && applications.length === 0 && <Button variant="link" className="mt-2 h-auto p-0" asChild><Link to="/jobs">Browse jobs and submit your first application</Link></Button>}
+            {completeness === 100 && applications.length > 0 && savedJobs.length === 0 && <Button variant="link" className="mt-2 h-auto p-0" asChild><Link to="/jobs">Explore and save matching jobs</Link></Button>}
           </CardContent>
         </Card>
         <Card>
           <CardHeader><CardTitle className="font-display text-lg">Recent Applications</CardTitle></CardHeader>
           <CardContent className="space-y-3">
-            {appliedJobs.map((job) => (
-              <div key={job.title} className="flex items-center justify-between rounded-lg bg-secondary/50 p-3">
+            {recentApplications.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No applications yet. Browse jobs to get started.</p>
+            ) : recentApplications.map((application) => (
+              <div key={application._id} className="flex items-center justify-between rounded-lg bg-secondary/50 p-3">
                 <div>
-                  <p className="text-sm font-medium">{job.title}</p>
-                  <p className="text-xs text-muted-foreground">{job.company} â€¢ {job.date}</p>
+                  <p className="text-sm font-medium">{application.job?.title || "Job unavailable"}</p>
+                  <p className="text-xs text-muted-foreground">{application.job?.company || "Company unavailable"} · {application.appliedAt ? formatDistanceToNow(new Date(application.appliedAt), { addSuffix: true }) : "Date unavailable"}</p>
                 </div>
-                <Badge className={statusColors[job.status]}>{job.status}</Badge>
+                <Badge className={statusColors[application.status] || "bg-muted text-muted-foreground"}>{application.status}</Badge>
               </div>
             ))}
           </CardContent>
         </Card>
       </div>
+      </>
+      )}
     </div>
   );
 };

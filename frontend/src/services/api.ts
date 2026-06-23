@@ -8,9 +8,29 @@ export const apiUrl = (endpoint: string) => {
     : `${base}${path}`;
 };
 
+export const publicAssetUrl = (assetPath: string) => {
+  if (/^https?:\/\//i.test(assetPath)) return assetPath;
+  const base = (configuredBaseUrl || "").replace(/\/api\/?$/, "").replace(/\/$/, "");
+  const uploadsIndex = assetPath.replace(/\\/g, "/").toLowerCase().indexOf("/uploads/");
+  const normalized = uploadsIndex >= 0
+    ? assetPath.replace(/\\/g, "/").slice(uploadsIndex)
+    : `/${assetPath.replace(/\\/g, "/").replace(/^\/+/, "")}`;
+  return `${base}${normalized}`;
+};
+
 interface ApiOptions extends RequestInit {
   skipAuth?: boolean;
   redirectOnUnauthorized?: boolean;
+}
+
+export class ApiError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
 }
 
 class ApiClient {
@@ -43,12 +63,12 @@ class ApiClient {
     if (response.status === 401) {
       this.clearToken();
       if (redirectOnUnauthorized) window.location.href = "/login";
-      throw new Error("Session expired. Please login again.");
+      throw new ApiError("Session expired. Please login again.", 401);
     }
 
     const contentType = response.headers.get("content-type");
     const data = contentType?.includes("application/json") ? await response.json() : null;
-    if (!response.ok) throw new Error(data?.message || `Request failed with status ${response.status}`);
+    if (!response.ok) throw new ApiError(data?.message || `Request failed with status ${response.status}`, response.status);
     return data;
   }
 

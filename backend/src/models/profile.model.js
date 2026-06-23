@@ -125,6 +125,27 @@ const profileSchema = new mongoose.Schema(
             github: String,
             portfolio: String,
         },
+
+        preferredJobTypes: {
+            type: [String],
+            default: [],
+        },
+
+        preferredWorkModes: {
+            type: [String],
+            default: [],
+        },
+
+        preferredIndustries: {
+            type: [String],
+            default: [],
+        },
+
+        expectedSalaryMin: {
+            type: Number,
+            min: 0,
+            default: 0,
+        },
     },
     { timestamps: true }
 );

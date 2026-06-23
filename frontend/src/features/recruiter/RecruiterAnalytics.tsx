@@ -1,85 +1,67 @@
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { BarChart3, TrendingUp, Users, Eye } from "lucide-react";
+import { BarChart3, Briefcase, Eye, Users } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import PageHeader from "@/components/common/PageHeader";
+import api from "@/services/api";
+import { normalizeApplicants } from "@/features/recruiter/ApplicantManagement";
+import { getRecruiterJobs } from "@/features/recruiter/recruiterApi";
+import type { Job } from "@/types";
 
-const appData = [
-  { name: "Frontend Eng", applications: 45, views: 320 },
-  { name: "Backend Dev", applications: 28, views: 210 },
-  { name: "Designer", applications: 67, views: 450 },
-  { name: "DevOps", applications: 12, views: 90 },
-  { name: "PM", applications: 34, views: 280 },
-];
+const RecruiterAnalytics = () => {
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [applicants, setApplicants] = useState<ReturnType<typeof normalizeApplicants>>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-const weeklyData = [
-  { week: "W1", views: 120, applications: 18 },
-  { week: "W2", views: 200, applications: 32 },
-  { week: "W3", views: 180, applications: 24 },
-  { week: "W4", views: 310, applications: 45 },
-];
+  useEffect(() => {
+    Promise.all([
+      getRecruiterJobs(),
+      api.get<unknown>("/applications/recruiter").then(normalizeApplicants),
+    ]).then(([jobData, applicantData]) => {
+      setJobs(jobData);
+      setApplicants(applicantData);
+    }).catch((requestError) => setError(requestError instanceof Error ? requestError.message : "Could not load analytics"))
+      .finally(() => setLoading(false));
+  }, []);
 
-const RecruiterAnalytics = () => (
-  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-    <PageHeader title="Analytics" description="Track the performance of your job postings" />
+  const byJob = useMemo(() => jobs.map((job) => ({
+    name: job.title.length > 18 ? `${job.title.slice(0, 18)}…` : job.title,
+    applications: applicants.filter((item) => item.job._id === job._id).length,
+    views: job.views || 0,
+  })), [applicants, jobs]);
+  const byStatus = useMemo(() => Object.entries(applicants.reduce<Record<string, number>>((counts, item) => {
+    counts[item.status] = (counts[item.status] || 0) + 1;
+    return counts;
+  }, {})).map(([name, count]) => ({ name, count })), [applicants]);
+  const totalViews = jobs.reduce((sum, job) => sum + (job.views || 0), 0);
+  const activeJobs = jobs.filter((job) => job.status === "active").length;
+  const closedJobs = jobs.filter((job) => job.status === "closed").length;
 
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {[
-        { label: "Total Views", value: "1,350", icon: Eye, change: "+18%" },
-        { label: "Applications", value: "186", icon: Users, change: "+12%" },
-        { label: "Conversion Rate", value: "13.8%", icon: TrendingUp, change: "+2.1%" },
-        { label: "Active Jobs", value: "4", icon: BarChart3, change: "" },
-      ].map((stat) => (
-        <Card key={stat.label}>
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">{stat.label}</p>
-                <p className="font-display text-2xl font-bold">{stat.value}</p>
-                {stat.change && <p className="text-xs text-success">{stat.change}</p>}
-              </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-                <stat.icon className="h-5 w-5 text-primary" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-
-    <div className="grid gap-6 lg:grid-cols-2">
-      <Card>
-        <CardHeader><CardTitle className="text-lg">Applications per Job</CardTitle></CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={appData}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-              <XAxis dataKey="name" className="text-xs" tick={{ fill: "hsl(var(--muted-foreground))" }} />
-              <YAxis tick={{ fill: "hsl(var(--muted-foreground))" }} />
-              <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }} />
-              <Bar dataKey="applications" fill="hsl(225, 73%, 57%)" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader><CardTitle className="text-lg">Weekly Trends</CardTitle></CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={weeklyData}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-              <XAxis dataKey="week" tick={{ fill: "hsl(var(--muted-foreground))" }} />
-              <YAxis tick={{ fill: "hsl(var(--muted-foreground))" }} />
-              <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }} />
-              <Line type="monotone" dataKey="views" stroke="hsl(225, 73%, 57%)" strokeWidth={2} />
-              <Line type="monotone" dataKey="applications" stroke="hsl(262, 83%, 58%)" strokeWidth={2} />
-            </LineChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
-    </div>
-  </motion.div>
-);
+  return (
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+      <PageHeader title="Analytics" description="Track the performance of your job postings" />
+      {loading ? <div className="p-6 text-sm text-muted-foreground">Loading analytics...</div> : error ? <Card><CardContent className="p-6 text-sm text-destructive">{error}</CardContent></Card> : <>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { label: "Total Views", value: totalViews, icon: Eye },
+            { label: "Applications", value: applicants.length, icon: Users },
+            { label: "Active Jobs", value: activeJobs, icon: Briefcase },
+            { label: "Closed Jobs", value: closedJobs, icon: BarChart3 },
+          ].map((stat) => <Card key={stat.label}><CardContent className="p-5"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">{stat.label}</p><p className="font-display text-2xl font-bold">{stat.value}</p></div><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10"><stat.icon className="h-5 w-5 text-primary" /></div></div></CardContent></Card>)}
+        </div>
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Card><CardHeader><CardTitle className="text-lg">Applications per Job</CardTitle></CardHeader><CardContent>
+            {byJob.length ? <ResponsiveContainer width="100%" height={250}><BarChart data={byJob}><CartesianGrid strokeDasharray="3 3" className="stroke-border" /><XAxis dataKey="name" tick={{ fill: "hsl(var(--muted-foreground))" }} /><YAxis tick={{ fill: "hsl(var(--muted-foreground))" }} /><Tooltip /><Bar dataKey="applications" fill="hsl(225, 73%, 57%)" radius={[4, 4, 0, 0]} /></BarChart></ResponsiveContainer> : <p className="text-sm text-muted-foreground">No job data yet.</p>}
+          </CardContent></Card>
+          <Card><CardHeader><CardTitle className="text-lg">Applications by Status</CardTitle></CardHeader><CardContent>
+            {byStatus.length ? <ResponsiveContainer width="100%" height={250}><BarChart data={byStatus}><CartesianGrid strokeDasharray="3 3" className="stroke-border" /><XAxis dataKey="name" tick={{ fill: "hsl(var(--muted-foreground))" }} /><YAxis allowDecimals={false} tick={{ fill: "hsl(var(--muted-foreground))" }} /><Tooltip /><Bar dataKey="count" fill="hsl(262, 83%, 58%)" radius={[4, 4, 0, 0]} /></BarChart></ResponsiveContainer> : <p className="text-sm text-muted-foreground">No application data yet.</p>}
+          </CardContent></Card>
+        </div>
+      </>}
+    </motion.div>
+  );
+};
 
 export default RecruiterAnalytics;

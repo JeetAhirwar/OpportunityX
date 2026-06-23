@@ -16,13 +16,32 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import PageHeader from "@/components/common/PageHeader";
-import api from "@/services/api";
+import api, { ApiError } from "@/services/api";
 import type { Profile, Certification } from "@/types";
 
 const defaultProfile: Profile = {
   name: "", phone: "", location: "", title: "", bio: "", photo: "",
   candidateType: "fresher", skills: [], education: [], experience: [],
   projects: [], certifications: [], socials: { linkedin: "", github: "", portfolio: "" },
+  preferredJobTypes: [], preferredWorkModes: [], preferredIndustries: [], expectedSalaryMin: 0,
+};
+
+const normalizeProfile = (response: unknown): Profile => {
+  const root = response && typeof response === "object" ? response as Record<string, unknown> : {};
+  const value = root.data && typeof root.data === "object" ? root.data as Partial<Profile> : root as Partial<Profile>;
+  return {
+    ...defaultProfile,
+    ...value,
+    skills: Array.isArray(value.skills) ? value.skills : [],
+    education: Array.isArray(value.education) ? value.education : [],
+    experience: Array.isArray(value.experience) ? value.experience : [],
+    projects: Array.isArray(value.projects) ? value.projects : [],
+    certifications: Array.isArray(value.certifications) ? value.certifications : [],
+    socials: { ...defaultProfile.socials, ...(value.socials || {}) },
+    preferredJobTypes: Array.isArray(value.preferredJobTypes) ? value.preferredJobTypes : [],
+    preferredWorkModes: Array.isArray(value.preferredWorkModes) ? value.preferredWorkModes : [],
+    preferredIndustries: Array.isArray(value.preferredIndustries) ? value.preferredIndustries : [],
+  };
 };
 
 const ProfileBuilder = () =>
@@ -49,8 +68,8 @@ const ProfileBuilder = () =>
     {
       try
       {
-        const data = await api.get<Profile>("/api/candidate/profile");
-        setProfile({ ...defaultProfile, ...data });
+        const data = normalizeProfile(await api.get<unknown>("/candidate/profile"));
+        setProfile(data);
         localStorage.removeItem("profileDraft");
         // If profile already has required fields, lock it
         if (data && data.name)
@@ -58,16 +77,17 @@ const ProfileBuilder = () =>
           setIsEditing(false);
           localStorage.setItem("ox_profile_complete", "true");
         }
-      } catch (error: any)
+      } catch (error: unknown)
       {
-        if (error.response?.status === 404)
+        if (error instanceof ApiError && error.status === 404)
         {
-          // No profile in DB â†’ start fresh
+          // No profile in DB: start fresh.
           setProfile(defaultProfile);
           localStorage.removeItem("profileDraft");
         } else
         {
-          console.error("Profile fetch error:", error);
+          const message = error instanceof Error ? error.message : "Unable to load your profile.";
+          toast({ title: "Could not load profile", description: message, variant: "destructive" });
         }
       } finally
       {
@@ -76,7 +96,7 @@ const ProfileBuilder = () =>
     };
 
     fetchProfile();
-  }, []);
+  }, [toast]);
 
   // Auto-save draft
   useEffect(() =>
@@ -167,7 +187,7 @@ const ProfileBuilder = () =>
     {
       const payload = { ...profile };
       if (payload.candidateType === "fresher") payload.experience = [];
-      await api.put("/api/candidate/profile", payload);
+      await api.put("/candidate/profile", payload);
 
       localStorage.removeItem("profileDraft");
       localStorage.setItem("ox_profile_complete", "true");
@@ -175,9 +195,9 @@ const ProfileBuilder = () =>
       setIsEditing(false);
 
       toast({ title: "Profile Saved", description: "Your profile updated successfully" });
-    } catch (error: any)
+    } catch (error: unknown)
     {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: error instanceof Error ? error.message : "Unable to save profile", variant: "destructive" });
     }
     setSaving(false);
   };
@@ -273,7 +293,7 @@ const ProfileBuilder = () =>
             <FieldError field="location" />
           </div>
           <div>
-            <Textarea placeholder="Professional summary (career goal, expertise, achievements â€” min 20 chars)" value={profile.bio} onChange={(e) => updateField("bio", e.target.value)} disabled={!isEditing} className={errors.bio ? "border-destructive" : ""} />
+            <Textarea placeholder="Professional summary (career goal, expertise, achievements — min 20 chars)" value={profile.bio} onChange={(e) => updateField("bio", e.target.value)} disabled={!isEditing} className={errors.bio ? "border-destructive" : ""} />
             <FieldError field="bio" />
           </div>
         </CardContent>

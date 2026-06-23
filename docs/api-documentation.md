@@ -20,6 +20,7 @@ Authorization: Bearer <jwt>
 | Jobs | `GET /api/jobs/:id` | Public |
 | Jobs | `POST /api/jobs` | Recruiter |
 | Jobs | `GET /api/jobs/my` | Recruiter |
+| Jobs | `GET /api/jobs/my/:id` | Recruiter |
 | Applications | `POST /api/applications/:jobId/apply` | Candidate |
 | Applications | `GET /api/applications/me` | Candidate |
 | Applications | `GET /api/applications/job/:jobId` | Recruiter |
@@ -32,6 +33,21 @@ Authorization: Bearer <jwt>
 | Chat | `PATCH /api/chat/conversations/:conversationId/read` | Conversation participant |
 | Chat | `PATCH/DELETE /api/chat/messages/:messageId` | Message sender |
 | Recruiter notes | `/api/recruiter/notes` | Recruiter |
+| Company | `GET /api/recruiter/company` | Recruiter |
+| Company | `PUT /api/recruiter/company` | Recruiter |
+| Company | `POST /api/recruiter/company/submit-verification` | Recruiter |
+| Admin | `GET /api/admin/analytics` | Admin |
+| Admin | `GET /api/admin/users` | Admin |
+| Admin | `PATCH /api/admin/users/:id/status` | Admin |
+| Admin | `PATCH /api/admin/users/:id/role` | Admin |
+| Admin | `DELETE /api/admin/users/:id` | Admin |
+| Admin | `GET /api/admin/recruiters` | Admin |
+| Admin | `GET /api/admin/recruiters/:id` | Admin |
+| Admin | `PATCH /api/admin/recruiters/:id/approve` | Admin |
+| Admin | `PATCH /api/admin/recruiters/:id/reject` | Admin |
+| Admin | `GET /api/admin/jobs` | Admin |
+| Admin | `PATCH /api/admin/jobs/:id/moderate` | Admin |
+| Admin | `GET /api/admin/applications` | Admin |
 | Admin | `/api/admin/*` | Admin |
 | Public | `/api/public/*` | Public |
 

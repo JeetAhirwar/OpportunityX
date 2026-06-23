@@ -1,11 +1,24 @@
 ﻿const Job = require("../models/job.model");
 const mongoose = require("mongoose");
+const Company = require("../models/company.model");
 
 const listFilter = (value) =>
   String(value || "")
     .split(",")
     .map((item) => item.trim().toLowerCase())
     .filter(Boolean);
+
+const canPublish = async (recruiterId) =>
+  Boolean(await Company.findOne({
+    recruiter: recruiterId,
+    verificationStatus: "verified",
+  }).select("_id"));
+
+const rejectUnverifiedPublish = (res) =>
+  res.status(403).json({
+    success: false,
+    message: "Your recruiter account must be verified before publishing jobs.",
+  });
 
 // =============================
 // Create Job (Recruiter)
@@ -14,6 +27,9 @@ exports.createJob = async (req, res) =>
 {
   try
   {
+    if ((req.body.status || "active") === "active" && !(await canPublish(req.user._id))) {
+      return rejectUnverifiedPublish(res);
+    }
     const job = await Job.create({
       ...req.body,
       postedBy: req.user._id,
@@ -41,19 +57,19 @@ exports.updateJob = async (req, res) =>
 {
   try
   {
+    const existing = await Job.findOne({ _id: req.params.id, postedBy: req.user._id });
+    if (!existing) {
+      return res.status(404).json({ success: false, message: "Job not found" });
+    }
+    const resultingStatus = req.body.status || existing.status;
+    if (resultingStatus === "active" && !(await canPublish(req.user._id))) {
+      return rejectUnverifiedPublish(res);
+    }
     const job = await Job.findOneAndUpdate(
       { _id: req.params.id, postedBy: req.user._id },
       req.body,
       { new: true, runValidators: true }
     );
-
-    if (!job)
-    {
-      return res.status(404).json({
-        success: false,
-        message: "Job not found",
-      });
-    }
 
     res.json({
       success: true,
@@ -281,6 +297,19 @@ exports.getMyJobs = async (req, res) =>
   }
 };
 
+exports.getMyJobById = async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(400).json({ success: false, message: "Invalid job ID" });
+    }
+    const job = await Job.findOne({ _id: req.params.id, postedBy: req.user._id });
+    if (!job) return res.status(404).json({ success: false, message: "Job not found" });
+    res.json({ success: true, data: job });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 
 // =============================
 // Update Job Status
@@ -299,6 +328,10 @@ exports.updateJobStatus = async (req, res) =>
         success: false,
         message: "Invalid status value",
       });
+    }
+
+    if (status === "active" && !(await canPublish(req.user._id))) {
+      return rejectUnverifiedPublish(res);
     }
 
     const job = await Job.findOneAndUpdate(

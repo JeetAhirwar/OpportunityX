@@ -1,26 +1,67 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { FileText, Sparkles } from "lucide-react";
+import { ExternalLink, FileText, Loader2, Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/components/common/PageHeader";
 import FileUpload from "@/components/common/FileUpload";
+import { useProfile } from "@/hooks/useProfile";
+import { useToast } from "@/hooks/use-toast";
+import api, { publicAssetUrl } from "@/services/api";
+import type { Profile } from "@/types";
+
+const appendProfile = (formData: FormData, profile: Profile) => {
+  formData.append("name", profile.name);
+  formData.append("title", profile.title || "");
+  formData.append("phone", profile.phone);
+  formData.append("location", profile.location);
+  formData.append("bio", profile.bio);
+  formData.append("candidateType", profile.candidateType);
+  profile.skills.forEach((skill) => formData.append("skills", skill));
+  for (const key of ["education", "experience", "projects", "certifications", "preferredJobTypes", "preferredWorkModes", "preferredIndustries"] as const) {
+    formData.append(key, JSON.stringify(profile[key] || []));
+  }
+  formData.append("socials", JSON.stringify(profile.socials || {}));
+  formData.append("expectedSalaryMin", String(profile.expectedSalaryMin || 0));
+};
+
+const resumeHref = (resumeUrl?: string) => {
+  if (!resumeUrl) return "";
+  return publicAssetUrl(resumeUrl);
+};
 
 const ResumeUpload = () => {
-  const [resume, setResume] = useState<{ name: string; uploadedAt?: string } | null>(null);
-  const [parsing, setParsing] = useState(false);
+  const { data: profile, isLoading, isError, error, refetch } = useProfile();
+  const { toast } = useToast();
+  const [uploading, setUploading] = useState(false);
 
-  const handleUpload = (file: File) => {
-    // API call: const formData = new FormData(); formData.append("resume", file); api.upload("/candidate/resume", formData);
-    setResume({ name: file.name, uploadedAt: "Just now" });
+  const handleUpload = async (file: File) => {
+    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+      toast({ title: "Unsupported file", description: "Resume must be a PDF file.", variant: "destructive" });
+      return;
+    }
+    if (!profile) {
+      toast({ title: "Profile required", description: "Complete your candidate profile before uploading a resume.", variant: "destructive" });
+      return;
+    }
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      appendProfile(formData, profile);
+      formData.append("resume", file);
+      await api.put("/candidate/profile", formData);
+      await refetch();
+      toast({ title: "Resume uploaded", description: "Your new resume is saved to your profile." });
+    } catch (requestError) {
+      toast({ title: "Resume upload failed", description: requestError instanceof Error ? requestError.message : "Unknown error", variant: "destructive" });
+    } finally {
+      setUploading(false);
+    }
   };
 
-  const handleParse = async () => {
-    setParsing(true);
-    // API call: api.post("/candidate/resume/parse")
-    await new Promise((r) => setTimeout(r, 2000));
-    setParsing(false);
-  };
+  const currentFile = profile?.resumeUrl
+    ? { name: profile.resumeUrl.split(/[\\/]/).pop() || "Current resume", uploadedAt: "Previously" }
+    : null;
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
@@ -33,35 +74,26 @@ const ResumeUpload = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <FileUpload
-            accept=".pdf,.doc,.docx"
-            maxSize={10}
-            onFileSelect={handleUpload}
-            onRemove={() => setResume(null)}
-            currentFile={resume}
-            label="Drop your resume here"
-          />
+          {isLoading ? (
+            <div className="flex min-h-32 items-center justify-center"><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading profile...</div>
+          ) : isError ? (
+            <div className="space-y-3 text-sm text-destructive"><p>{error instanceof Error ? error.message : "Could not load your profile."}</p><Button variant="outline" onClick={() => void refetch()}>Try again</Button></div>
+          ) : !profile ? (
+            <div className="space-y-2 text-sm"><p className="font-medium">Complete your candidate profile first</p><p className="text-muted-foreground">A profile is required before a resume can be uploaded.</p></div>
+          ) : (
+            <>
+              <FileUpload accept=".pdf,application/pdf" maxSize={10} onFileSelect={(file) => void handleUpload(file)} currentFile={currentFile} label="Drop your PDF resume here" />
+              {uploading && <p className="mt-3 flex items-center text-sm text-muted-foreground"><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Uploading resume...</p>}
+              {profile?.resumeUrl && <Button variant="outline" size="sm" className="mt-4" asChild><a href={resumeHref(profile.resumeUrl)} target="_blank" rel="noopener noreferrer"><ExternalLink className="mr-2 h-4 w-4" /> View Current Resume</a></Button>}
+            </>
+          )}
         </CardContent>
       </Card>
 
-      {resume && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Sparkles className="h-5 w-5 text-accent" /> AI Resume Parsing
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="mb-4 text-sm text-muted-foreground">
-              Our AI can extract your skills, experience, and education from your resume and auto-fill your profile.
-            </p>
-            <Button onClick={handleParse} disabled={parsing} className="gradient-primary border-0">
-              <Sparkles className="mr-2 h-4 w-4" />
-              {parsing ? "Parsing..." : "Parse Resume with AI"}
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+      <Card>
+        <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><Sparkles className="h-5 w-5 text-accent" /> AI Resume Parsing</CardTitle></CardHeader>
+        <CardContent><p className="text-sm text-muted-foreground">Automatic resume parsing is coming soon. Your uploaded PDF is stored with your candidate profile.</p></CardContent>
+      </Card>
     </motion.div>
   );
 };

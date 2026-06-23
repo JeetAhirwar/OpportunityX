@@ -6,7 +6,8 @@ import {
   BarChart3, Settings, LogOut, Menu, X, MessageSquare, Bell,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import Navbar from "@/components/common/Navbar";
 import PostJob from "@/features/recruiter/PostJob";
 import ManageJobs from "@/features/recruiter/ManageJobs";
@@ -16,7 +17,11 @@ import RecruiterAnalytics from "@/features/recruiter/RecruiterAnalytics";
 import ChatPage from "@/features/chat/ChatPage";
 import NotificationsPage from "@/features/notifications/NotificationsPage";
 import SettingsPage from "@/features/settings/SettingsPage";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import api from "@/services/api";
+import { normalizeApplicants } from "@/features/recruiter/ApplicantManagement";
+import { getCompanyProfile, getRecruiterJobs } from "@/features/recruiter/recruiterApi";
+import type { Job } from "@/types";
 
 const sidebarLinks = [
   { label: "Dashboard", href: "/recruiter/dashboard", icon: LayoutDashboard },
@@ -32,18 +37,42 @@ const sidebarLinks = [
 
 const DashboardHome = () => {
   const { user } = useAuth();
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [applicants, setApplicants] = useState<ReturnType<typeof normalizeApplicants>>([]);
+  const [verification, setVerification] = useState("unverified");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    Promise.all([
+      getRecruiterJobs(),
+      api.get<unknown>("/applications/recruiter").then(normalizeApplicants),
+      getCompanyProfile(),
+    ]).then(([jobData, applicantData, company]) => {
+      setJobs(jobData);
+      setApplicants(applicantData);
+      setVerification(company.verificationStatus);
+    }).catch((requestError) => setError(requestError instanceof Error ? requestError.message : "Could not load dashboard"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const activeJobs = jobs.filter((job) => job.status === "active").length;
+  const inactiveJobs = jobs.filter((job) => ["draft", "closed"].includes(job.status)).length;
+  const newApplicants = applicants.filter((item) => item.status === "applied").length;
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-bold">Welcome, {user?.name?.split(" ")[0] || "Recruiter"}!</h1>
-        <p className="text-muted-foreground">Manage your job postings and applicants</p>
+        <div className="flex items-center gap-2"><p className="text-muted-foreground">Manage your job postings and applicants</p><Badge variant="outline" className="capitalize">{verification}</Badge></div>
       </div>
+      {loading ? <div className="p-6 text-sm text-muted-foreground">Loading dashboard...</div> : error ? <Card><CardContent className="p-6 text-sm text-destructive">{error}</CardContent></Card> : <>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { label: "Active Jobs", value: "8", icon: Briefcase },
-          { label: "Total Applicants", value: "234", icon: Users },
-          { label: "Interviews", value: "12", icon: LayoutDashboard },
-          { label: "This Month Views", value: "3.2K", icon: BarChart3 },
+          { label: "Total Jobs", value: jobs.length, icon: Briefcase },
+          { label: "Active Jobs", value: activeJobs, icon: LayoutDashboard },
+          { label: "Draft / Closed", value: inactiveJobs, icon: BarChart3 },
+          { label: "Applicants", value: applicants.length, icon: Users },
         ].map((stat) => (
           <Card key={stat.label}>
             <CardContent className="p-5">
@@ -60,6 +89,18 @@ const DashboardHome = () => {
           </Card>
         ))}
       </div>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card><CardHeader><CardTitle className="text-lg">Recent Applications</CardTitle></CardHeader><CardContent className="space-y-3">
+          {applicants.slice(0, 5).map((item) => <div key={item._id} className="rounded-lg bg-secondary/50 p-3"><p className="text-sm font-medium">{item.candidate.name}</p><p className="text-xs text-muted-foreground">{item.job.title} · {item.status}</p></div>)}
+          {!applicants.length && <p className="text-sm text-muted-foreground">No applicants yet.</p>}
+        </CardContent></Card>
+        <Card><CardHeader><CardTitle className="text-lg">Recent Jobs</CardTitle></CardHeader><CardContent className="space-y-3">
+          {jobs.slice(0, 5).map((job) => <Link key={job._id} to={`/recruiter/jobs/${job._id}/edit`} className="block rounded-lg bg-secondary/50 p-3"><p className="text-sm font-medium">{job.title}</p><p className="text-xs text-muted-foreground">{job.status} · {job.applicantCount || 0} applicants</p></Link>)}
+          {!jobs.length && <p className="text-sm text-muted-foreground">No jobs posted yet.</p>}
+        </CardContent></Card>
+      </div>
+      <p className="text-xs text-muted-foreground">{newApplicants} applications are currently new.</p>
+      </>}
     </div>
   );
 };
@@ -96,7 +137,9 @@ const RecruiterDashboard = () => {
               <Route path="dashboard" element={<DashboardHome />} />
               <Route path="post-job" element={<PostJob />} />
               <Route path="jobs" element={<ManageJobs />} />
+              <Route path="jobs/:id/edit" element={<PostJob />} />
               <Route path="applicants" element={<ApplicantManagement />} />
+              <Route path="applicants/:jobId" element={<ApplicantManagement />} />
               <Route path="company" element={<CompanyProfile />} />
               <Route path="analytics" element={<RecruiterAnalytics />} />
               <Route path="chat" element={<ChatPage />} />

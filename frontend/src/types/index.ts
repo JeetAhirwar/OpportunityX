@@ -48,6 +48,10 @@ export interface Profile {
   socials: Socials;
   username?: string;
   resumeUrl?: string;
+  preferredJobTypes?: string[];
+  preferredWorkModes?: string[];
+  preferredIndustries?: string[];
+  expectedSalaryMin?: number;
 }
 
 export interface Job {
@@ -56,6 +60,8 @@ export interface Job {
   company: string;
   location: string;
   description: string;
+  responsibilities?: string;
+  qualifications?: string;
   salary: { min: number; max: number; currency: string };
   skills: string[];
   experienceLevel: "junior" | "mid" | "senior" | "lead";

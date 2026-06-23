@@ -2,6 +2,38 @@
 
 ## 2026-06-22
 
+- Completed Phase 5 admin flow integration.
+- Replaced admin dashboard, users, approvals, job moderation, applications, and
+  analytics mock data with authenticated backend APIs.
+- Added self-protection for admin status, role, and delete actions and returned
+  explicit safe user fields only.
+- Added real Company verification approval/rejection with reviewer metadata,
+  rejection reasons, recruiter verification updates, notifications, and live
+  socket events.
+- Added all-job moderation and read-only all-applications administration.
+- Replaced fake reports/download actions with an explicit Coming Soon state.
+- Completed Phase 4 recruiter flow integration.
+- Replaced recruiter dashboard and analytics mock values with derived job and
+  application data.
+- Added recruiter-owned job edit loading, status controls, deletion, and
+  per-job applicant routing.
+- Added persistent Company profiles with verification submission/status fields.
+- Enforced verified-company publishing on create, edit, and status transitions
+  while continuing to allow draft jobs.
+- Connected aggregate and per-job applicant lists with safe response
+  normalization, status updates, notes display, and chat actions.
+- Completed Phase 3 candidate flow integration.
+- Replaced candidate dashboard metrics and recent applications with data from
+  applications, saved jobs, and candidate profile APIs.
+- Connected Saved Jobs to MongoDB-backed list and toggle endpoints with
+  loading, error, empty, view-details, and unsave states.
+- Connected the standalone Resume page to candidate profile persistence using
+  the existing PDF multipart upload flow and removed fake AI parsing.
+- Hardened candidate profile and application response normalization, missing
+  record handling, status displays, withdrawal, and job-detail navigation.
+- Persisted onboarding job type, work mode, industry, and minimum salary
+  preferences on the candidate Profile model.
+- Replaced local-only fake job alerts with an explicit Coming Soon state.
 - Completed Phase 2 authentication stability and session hardening.
 - Added authenticated `GET /api/auth/me` session validation and safe user
   responses for register, login, and session restore.

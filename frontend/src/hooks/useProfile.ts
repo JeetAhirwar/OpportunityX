@@ -1,11 +1,21 @@
 ﻿import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import api from "@/services/api";
+import api, { ApiError } from "@/services/api";
 import type { Profile } from "@/types";
 
 export const useProfile = () =>
   useQuery({
     queryKey: ["profile"],
-    queryFn: () => api.get<Profile>("/candidate/profile"),
+    queryFn: async () => {
+      try {
+        const response = await api.get<unknown>("/candidate/profile");
+        const root = response && typeof response === "object" ? response as Record<string, unknown> : {};
+        return ((root.data && typeof root.data === "object") ? root.data : response) as Profile;
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 404) return null;
+        throw error;
+      }
+    },
+    retry: false,
   });
 
 export const useSaveProfile = () => {

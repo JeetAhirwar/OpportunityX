@@ -9,6 +9,7 @@ const {
   searchJobs,
   getJobById,
   getMyJobs,
+  getMyJobById,
   updateJobStatus,
   getFeaturedJobs,
 } = require("../controllers/job.controller");
@@ -17,6 +18,7 @@ const {
 router.get("/", searchJobs);
 router.get("/featured", getFeaturedJobs);
 router.get("/my", protect, authorize("recruiter"), getMyJobs);
+router.get("/my/:id", protect, authorize("recruiter"), getMyJobById);
 router.get("/:id", getJobById);
 
 // Recruiter routes

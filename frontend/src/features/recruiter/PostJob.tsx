@@ -1,5 +1,7 @@
 ﻿import { useState } from "react";
 import { motion } from "framer-motion";
+import { useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Eye, Save, Send } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,13 +13,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import PageHeader from "@/components/common/PageHeader";
-import api from "@/services/api"; // or wherever your axios instance is
+import api from "@/services/api";
+import { getCompanyProfile, getRecruiterJob } from "@/features/recruiter/recruiterApi";
 
 const steps = ["Job Details", "Requirements", "Compensation", "Preview"];
 
 const PostJob = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { id } = useParams();
+  const isEditing = Boolean(id);
   const [step, setStep] = useState(0);
+  const [loading, setLoading] = useState(isEditing);
+  const [saving, setSaving] = useState(false);
+  const [verificationStatus, setVerificationStatus] = useState("unverified");
   const [form, setForm] = useState({
     title: "", company: "", location: "", type: "full-time", workMode: "remote",
     description: "", responsibilities: "", qualifications: "",
@@ -25,6 +34,25 @@ const PostJob = () => {
     salaryMin: "", salaryMax: "", currency: "USD", showSalary: true,
     experience: "mid", deadline: "",
   });
+
+  useEffect(() => {
+    void getCompanyProfile().then((company) => setVerificationStatus(company.verificationStatus)).catch(() => undefined);
+    if (!id) return;
+    setLoading(true);
+    getRecruiterJob(id)
+      .then((job) => setForm({
+        title: job.title || "", company: job.company || "", location: job.location || "",
+        type: job.jobType || "full-time", workMode: job.workMode || "remote",
+        description: job.description || "", responsibilities: job.responsibilities || "",
+        qualifications: job.qualifications || "", skills: job.skills || [], newSkill: "",
+        salaryMin: String(job.salary?.min || ""), salaryMax: String(job.salary?.max || ""),
+        currency: job.salary?.currency || "USD", showSalary: true,
+        experience: job.experienceLevel || "mid",
+        deadline: job.deadline ? new Date(job.deadline).toISOString().slice(0, 10) : "",
+      }))
+      .catch((error) => toast({ title: "Could not load job", description: error instanceof Error ? error.message : "Unknown error", variant: "destructive" }))
+      .finally(() => setLoading(false));
+  }, [id, toast]);
 
   const update = (key: string, value: any) => setForm((p) => ({ ...p, [key]: value }));
 
@@ -36,6 +64,11 @@ const PostJob = () => {
   };
 
   const handleSubmit = async (draft = false) => {
+  if (!draft && verificationStatus !== "verified") {
+    toast({ title: "Verification required", description: "Your recruiter account must be verified before publishing jobs.", variant: "destructive" });
+    return;
+  }
+  setSaving(true);
   try {
     const payload = {
       title: form.title,
@@ -57,28 +90,36 @@ const PostJob = () => {
       status: draft ? "draft" : "active",
     };
 
-    await api.post("/api/jobs", payload);
+    if (id) await api.put(`/jobs/${id}`, payload);
+    else await api.post("/jobs", payload);
 
     toast({
-      title: draft ? "Draft saved" : "Job posted",
+      title: draft ? "Draft saved" : isEditing ? "Job updated" : "Job posted",
       description: draft
         ? "You can publish it later."
         : "Your job is now live.",
     });
+    navigate("/recruiter/jobs");
 
-  } catch (error: any) {
-    console.error(error);
+  } catch (error: unknown) {
     toast({
       title: "Error",
-      description: error.response?.data?.message || "Failed to post job",
+      description: error instanceof Error ? error.message : "Failed to save job",
       variant: "destructive",
     });
+  } finally {
+    setSaving(false);
   }
 };
 
+  if (loading) return <div className="p-6 text-sm text-muted-foreground">Loading job...</div>;
+
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-      <PageHeader title="Post a Job" description="Create a new job listing" />
+      <PageHeader title={isEditing ? "Edit Job" : "Post a Job"} description={isEditing ? "Update your job listing" : "Create a new job listing"} />
+      {verificationStatus !== "verified" && (
+        <Card className="border-warning/40"><CardContent className="p-4 text-sm text-warning">Your company is {verificationStatus}. You can save drafts, but publishing requires verification.</CardContent></Card>
+      )}
 
       {/* Steps */}
       <div className="flex items-center gap-2">
@@ -151,7 +192,7 @@ const PostJob = () => {
               <Label>Required Skills</Label>
               <div className="flex flex-wrap gap-2 mb-2">
                 {form.skills.map((s) => (
-                  <Badge key={s} variant="secondary" className="gap-1 pr-1">{s}<button onClick={() => update("skills", form.skills.filter((x) => x !== s))} className="ml-1 hover:text-destructive">Ã—</button></Badge>
+                  <Badge key={s} variant="secondary" className="gap-1 pr-1">{s}<button onClick={() => update("skills", form.skills.filter((x) => x !== s))} className="ml-1 hover:text-destructive">×</button></Badge>
                 ))}
               </div>
               <div className="flex gap-2">
@@ -197,7 +238,7 @@ const PostJob = () => {
           <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Eye className="h-5 w-5" /> Preview</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <h2 className="font-display text-xl font-bold">{form.title || "Job Title"}</h2>
-            <p className="text-muted-foreground">{form.company || "Company"} Â· {form.location || "Location"} Â· {form.workMode} Â· {form.type}</p>
+            <p className="text-muted-foreground">{form.company || "Company"} · {form.location || "Location"} · {form.workMode} · {form.type}</p>
             {form.showSalary && form.salaryMin && <p className="font-medium">{form.currency} {Number(form.salaryMin).toLocaleString()} - {Number(form.salaryMax).toLocaleString()}</p>}
             {form.skills.length > 0 && <div className="flex flex-wrap gap-2">{form.skills.map((s) => <Badge key={s} variant="secondary">{s}</Badge>)}</div>}
             {form.description && <div><h3 className="font-semibold mb-1">Description</h3><p className="text-sm text-muted-foreground whitespace-pre-line">{form.description}</p></div>}
@@ -213,11 +254,11 @@ const PostJob = () => {
           <ArrowLeft className="mr-2 h-4 w-4" /> Back
         </Button>
         <div className="flex gap-2">
-          {step === 3 && <Button variant="outline" onClick={() => handleSubmit(true)}><Save className="mr-2 h-4 w-4" /> Save Draft</Button>}
+          {step === 3 && <Button variant="outline" onClick={() => handleSubmit(true)} disabled={saving}><Save className="mr-2 h-4 w-4" /> Save Draft</Button>}
           {step < 3 ? (
             <Button onClick={() => setStep(step + 1)} className="gradient-primary border-0">Next <ArrowRight className="ml-2 h-4 w-4" /></Button>
           ) : (
-            <Button onClick={() => handleSubmit(false)} className="gradient-primary border-0"><Send className="mr-2 h-4 w-4" /> Publish Job</Button>
+            <Button onClick={() => handleSubmit(false)} disabled={saving || verificationStatus !== "verified"} className="gradient-primary border-0"><Send className="mr-2 h-4 w-4" /> {isEditing ? "Update & Publish" : "Publish Job"}</Button>
           )}
         </div>
       </div>

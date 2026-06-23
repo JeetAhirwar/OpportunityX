@@ -1,7 +1,6 @@
 ﻿import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 
 import {
   Briefcase,
@@ -11,6 +10,9 @@ import {
   Eye,
   XCircle,
   PlusCircle,
+  Trash2,
+  PlayCircle,
+  AlertCircle,
 } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -32,7 +34,9 @@ import {
 import PageHeader from "@/components/common/PageHeader";
 import StatusBadge from "@/components/common/StatusBadge";
 import EmptyState from "@/components/common/EmptyState";
-import { apiUrl } from "@/services/api";
+import api from "@/services/api";
+import { getRecruiterJobs } from "@/features/recruiter/recruiterApi";
+import { useToast } from "@/hooks/use-toast";
 
 interface Job {
   _id: string;
@@ -47,28 +51,19 @@ interface Job {
 
 const ManageJobs = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const [jobs, setJobs] = useState<Job[]>([]);
   const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchJobs = async () => {
       try {
-        const token = localStorage.getItem("ox_token");
-
-        const { data } = await axios.get(
-          apiUrl("/api/jobs/my"),
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        setJobs(data.data || []);
-      } catch (error) {
-        console.error("Failed to fetch jobs", error);
+        setJobs(await getRecruiterJobs());
+      } catch (requestError) {
+        setError(requestError instanceof Error ? requestError.message : "Failed to fetch jobs");
       } finally {
         setLoading(false);
       }
@@ -77,28 +72,25 @@ const ManageJobs = () => {
     fetchJobs();
   }, []);
 
-  // ðŸ”¥ Close Job Handler
-  const handleCloseJob = async (id: string) => {
+  const handleStatus = async (id: string, status: string) => {
     try {
-      const token = localStorage.getItem("ox_token");
-
-      await axios.patch(
-        apiUrl(`/api/jobs/${id}/status`),
-        { status: "closed" },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
+      await api.patch(`/jobs/${id}/status`, { status });
       setJobs((prev) =>
-        prev.map((job) =>
-          job._id === id ? { ...job, status: "closed" } : job
-        )
+        prev.map((job) => job._id === id ? { ...job, status } : job)
       );
-    } catch (error) {
-      console.error("Failed to update job status", error);
+      toast({ title: `Job ${status}` });
+    } catch (requestError) {
+      toast({ title: "Could not update job", description: requestError instanceof Error ? requestError.message : "Unknown error", variant: "destructive" });
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await api.delete(`/jobs/${id}`);
+      setJobs((items) => items.filter((job) => job._id !== id));
+      toast({ title: "Job deleted" });
+    } catch (requestError) {
+      toast({ title: "Could not delete job", description: requestError instanceof Error ? requestError.message : "Unknown error", variant: "destructive" });
     }
   };
 
@@ -107,9 +99,8 @@ const ManageJobs = () => {
       ? jobs
       : jobs.filter((j) => j.status.toLowerCase() === filter);
 
-  if (loading) {
-    return <div className="p-6">Loading jobs...</div>;
-  }
+  if (loading) return <div className="p-6">Loading jobs...</div>;
+  if (error) return <EmptyState icon={AlertCircle} title="Could not load jobs" description={error} />;
 
   return (
     <motion.div
@@ -160,7 +151,7 @@ const ManageJobs = () => {
                     </div>
 
                     <p className="text-sm text-muted-foreground">
-                      {job.location} Â· {job.jobType} Â· Posted{" "}
+                      {job.location} · {job.jobType} · Posted{" "}
                       {new Date(job.createdAt).toLocaleDateString()}
                     </p>
 
@@ -199,7 +190,7 @@ const ManageJobs = () => {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
                           onClick={() =>
-                            navigate(`/recruiter/edit-job/${job._id}`)
+                            navigate(`/recruiter/jobs/${job._id}/edit`)
                           }
                         >
                           <Edit className="mr-2 h-4 w-4" />
@@ -218,10 +209,18 @@ const ManageJobs = () => {
                         <DropdownMenuItem
                           disabled={job.status === "closed"}
                           className="text-destructive"
-                          onClick={() => handleCloseJob(job._id)}
+                          onClick={() => void handleStatus(job._id, "closed")}
                         >
                           <XCircle className="mr-2 h-4 w-4" />
                           Close Job
+                        </DropdownMenuItem>
+                        {job.status !== "active" && (
+                          <DropdownMenuItem onClick={() => void handleStatus(job._id, "active")}>
+                            <PlayCircle className="mr-2 h-4 w-4" /> Publish
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem className="text-destructive" onClick={() => void handleDelete(job._id)}>
+                          <Trash2 className="mr-2 h-4 w-4" /> Delete
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

@@ -1,5 +1,16 @@
 # OpportunityX Implementation Status Report
 
+> Phase 4 update (June 22, 2026): recruiter dashboard and analytics now use
+> real jobs/applications; owned job edit/delete/status and per-job applicants
+> are connected; Company model/APIs persist recruiter profiles; verification
+> submission is supported; and active job publishing is blocked until the
+> Company record is verified. Admin approval/rejection remains Phase 5.
+
+> Phase 5 update (June 22, 2026): admin dashboard, users, recruiter approvals,
+> job moderation, applications, and analytics use real protected APIs.
+> Verification approval/rejection records reviewer metadata and emits recruiter
+> notifications. Reports are explicitly Coming Soon pending an export pipeline.
+
 **Assessment date:** June 22, 2026  
 **Assessment type:** Static repository audit plus build, lint, and existing test execution  
 **Repository scope:** `frontend`, `backend`, root configuration, environment examples, and project documentation
@@ -100,12 +111,12 @@ The production build emits a large JavaScript chunk warning: approximately
 
 | Page | Route | Access | Status | Backend connected | Main issue / next fix |
 |---|---|---|---|---|---|
-| Dashboard | `/recruiter/dashboard` | Recruiter | Static Dummy | No | Metrics are hard-coded |
-| Post Job | `/recruiter/post-job` | Recruiter | Mostly Working | Yes | Core job fields save; responsibilities/qualifications/show-salary are not represented in the Job model |
-| Manage Jobs | `/recruiter/jobs` | Recruiter | Partial/Working | Yes | List and close work; Edit and per-job Applicants links point to missing routes |
+| Dashboard | `/recruiter/dashboard` | Recruiter | Working | Yes | Real jobs/applications and verification status |
+| Post Job | `/recruiter/post-job` | Recruiter | Working | Yes | Drafts allowed; active publishing requires verified Company |
+| Manage Jobs | `/recruiter/jobs` | Recruiter | Working | Yes | Real list, edit, applicants, status, preview, and delete actions |
 | Applicants | `/recruiter/applicants` | Recruiter | Working, needs verification | Yes | Loads owned-job applicants, updates status, starts chat |
-| Company Profile | `/recruiter/company` | Recruiter | Static Dummy | No | No Company model or API; save is a timeout |
-| Analytics | `/recruiter/analytics` | Recruiter | Static Dummy | No | All metrics/charts are hard-coded |
+| Company Profile | `/recruiter/company` | Recruiter | Working | Yes | Persisted Company profile and verification submission |
+| Analytics | `/recruiter/analytics` | Recruiter | Working | Yes | Derived job/application metrics and charts |
 | Messages | `/recruiter/chat` | Recruiter | Integrated, Partial UI | Yes | Same real shared chat UI as candidate |
 | Notifications | `/recruiter/notifications` | Recruiter | Working, needs verification | Yes | Real notification API and live badge |
 | Settings | `/recruiter/settings` | Recruiter | Mostly Dummy | No | Only local theme and local form state |

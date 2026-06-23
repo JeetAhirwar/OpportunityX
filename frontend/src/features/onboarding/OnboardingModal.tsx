@@ -75,6 +75,20 @@ const OnboardingModal = ({ open, onComplete }: OnboardingModalProps) => {
     setter(list.includes(item) ? list.filter((i) => i !== item) : [...list, item]);
   };
 
+  const selectResume = (file?: File) => {
+    if (!file) return;
+    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+      setSaveError("Resume must be a PDF file.");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setSaveError("Resume must be smaller than 10 MB.");
+      return;
+    }
+    setSaveError("");
+    setResumeFile(file);
+  };
+
   const canProceed = () => {
     if (step === 0) return isProfileStepValid;
     if (step === 1) return true; // resume is optional
@@ -115,6 +129,11 @@ const handleFinish = async () => {
         portfolio: "",
       })
     );
+
+    formData.append("preferredJobTypes", JSON.stringify(selectedTypes));
+    formData.append("preferredWorkModes", JSON.stringify(selectedModes));
+    formData.append("preferredIndustries", JSON.stringify(selectedIndustries));
+    formData.append("expectedSalaryMin", salaryMin || "0");
 
     if (resumeFile) {
       formData.append("resume", resumeFile);
@@ -279,17 +298,18 @@ const handleFinish = async () => {
                       <>
                         <Upload className="mb-3 h-10 w-10 text-muted-foreground" />
                         <p className="font-medium">Drop your resume here</p>
-                        <p className="mt-1 text-xs text-muted-foreground">PDF, DOC, DOCX · Max 10MB</p>
+                        <p className="mt-1 text-xs text-muted-foreground">PDF · Max 10MB</p>
                       </>
                     )}
                   </div>
                   <input
                     id="onboarding-resume"
                     type="file"
-                    accept=".pdf,.doc,.docx"
+                    accept=".pdf,application/pdf"
                     className="hidden"
-                    onChange={(e) => e.target.files?.[0] && setResumeFile(e.target.files[0])}
+                    onChange={(e) => selectResume(e.target.files?.[0])}
                   />
+                  {saveError && <p className="text-sm text-destructive">{saveError}</p>}
                 </div>
               )}
 

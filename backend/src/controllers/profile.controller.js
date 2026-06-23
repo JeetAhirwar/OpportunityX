@@ -7,13 +7,16 @@ exports.saveProfile = async (req, res) =>
     {
         const existingProfile = await Profile.findOne({ user: req.user._id });
 
-        // ðŸ‘‰ If resume uploaded, add its path into body
+        // Preserve the current resume unless a replacement was uploaded.
         if (req.file)
         {
-            req.body.resumeUrl = req.file.path;
+            req.body.resumeUrl = `/uploads/resumes/${req.file.filename}`;
         }
 
-        for (const field of ["education", "experience", "projects", "certifications"])
+        for (const field of [
+            "education", "experience", "projects", "certifications",
+            "preferredJobTypes", "preferredWorkModes", "preferredIndustries",
+        ])
         {
             if (typeof req.body[field] === "string")
             {
@@ -24,6 +27,11 @@ exports.saveProfile = async (req, res) =>
         if (typeof req.body.socials === "string")
         {
             req.body.socials = JSON.parse(req.body.socials);
+        }
+
+        if (req.body.expectedSalaryMin !== undefined)
+        {
+            req.body.expectedSalaryMin = Number(req.body.expectedSalaryMin) || 0;
         }
 
         if (existingProfile)
