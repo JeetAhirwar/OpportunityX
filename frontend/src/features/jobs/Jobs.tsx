@@ -33,6 +33,14 @@ const formatSalary = (job: Job) => {
   return min && max ? `${formatter.format(min)} - ${formatter.format(max)}` : formatter.format(min || max);
 };
 
+const companyInitials = (company?: string) => (company?.trim()?.slice(0, 2) || "OX").toUpperCase();
+const formatWorkMode = (workMode?: string) => workMode === "onsite" ? "On-site" : workMode || "Work mode TBD";
+const safeDateDistance = (date?: string) => {
+  if (!date) return "Date unavailable";
+  const parsed = new Date(date);
+  return Number.isNaN(parsed.getTime()) ? "Date unavailable" : formatDistanceToNow(parsed, { addSuffix: true });
+};
+
 const Jobs = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -139,16 +147,22 @@ const Jobs = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <SEOHead title="Browse Jobs — OpportunityX" description="Find your next career opportunity. Search jobs by location, salary, type, and experience level." canonical="https://opportunityx.com/jobs" />
+      <SEOHead title="Browse Jobs - OpportunityX" description="Find your next career opportunity. Search jobs by location, salary, type, and experience level." canonical="https://opportunityx.com/jobs" />
       <Navbar />
-      <section className="border-b border-border bg-card py-8">
+      <section className="relative overflow-hidden border-b border-border/70 bg-card/50 py-8 backdrop-blur">
+        <div className="surface-grid pointer-events-none absolute inset-0 opacity-50" />
         <div className="container mx-auto px-4">
-          <div className="flex flex-col gap-3 md:flex-row">
+          <div className="relative mb-6">
+            <p className="text-xs font-semibold uppercase text-primary">Opportunity search</p>
+            <h1 className="mt-1 font-display text-3xl font-bold">Browse premium roles</h1>
+            <p className="mt-2 text-sm text-muted-foreground">Search real open roles from OpportunityX recruiters.</p>
+          </div>
+          <div className="glass-strong relative flex flex-col gap-3 rounded-lg p-3 md:flex-row">
             <div className="relative flex-1"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input placeholder="Job title, keyword, or company" value={searchQuery} onChange={(event) => { setSearchQuery(event.target.value); setPage(1); }} className="pl-10" /></div>
             <div className="relative flex-1"><MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input placeholder="City, state, or remote" value={locationQuery} onChange={(event) => { setLocationQuery(event.target.value); setPage(1); }} className="pl-10" /></div>
-            <Button className="gradient-primary border-0" onClick={() => void refetch()} disabled={isFetching}>Search</Button>
+            <Button onClick={() => void refetch()} disabled={isFetching}>Search</Button>
           </div>
-          <div className="mt-4 flex items-center justify-between">
+          <div className="relative mt-4 flex items-center justify-between">
             <p className="text-sm text-muted-foreground"><strong className="text-foreground">{total}</strong> jobs found</p>
             <div className="flex items-center gap-2">
               <Select value={sortBy} onValueChange={(value) => { setSortBy(value); setPage(1); }}>
@@ -163,27 +177,27 @@ const Jobs = () => {
 
       <div className="container mx-auto px-4 py-8">
         <div className="flex gap-8">
-          <aside className="hidden w-72 shrink-0 md:block"><div className="sticky top-24"><FilterSidebar /></div></aside>
+          <aside className="hidden w-72 shrink-0 md:block"><div className="premium-surface sticky top-24 rounded-lg p-5"><FilterSidebar /></div></aside>
           <div className="flex-1 space-y-4">
             {isLoading && Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} className="h-48 w-full rounded-xl" />)}
             {isError && <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-8 text-center"><p className="font-medium">Unable to load jobs</p><p className="mt-1 text-sm text-muted-foreground">{error instanceof Error ? error.message : "Please try again."}</p><Button className="mt-4" variant="outline" onClick={() => void refetch()}>Try Again</Button></div>}
             {!isLoading && !isError && jobs.length === 0 && <div className="py-16 text-center"><p className="text-muted-foreground">No jobs match your search criteria.</p><Button variant="link" onClick={clearFilters}>Clear all filters</Button></div>}
             {!isLoading && !isError && jobs.map((job, index) => (
               <motion.div key={job._id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.03 }}>
-                <Card className="group transition-all hover:border-primary/30 hover:shadow-md">
+                <Card className="group transition-all hover:-translate-y-1 hover:border-primary/35 hover:shadow-xl">
                   <CardContent className="p-5">
                     <div className="flex items-start gap-4">
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 font-display text-sm font-bold text-primary">{job.company.slice(0, 2).toUpperCase()}</div>
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 font-display text-sm font-bold text-primary">{companyInitials(job.company)}</div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-start justify-between gap-2">
-                          <div><Link to={`/jobs/${job._id}`} className="font-display font-semibold transition-colors hover:text-primary">{job.title}</Link><p className="text-sm text-muted-foreground">{job.company}</p></div>
+                          <div><Link to={`/jobs/${job._id}`} className="font-display font-semibold transition-colors hover:text-primary">{job.title || "Untitled role"}</Link><p className="text-sm text-muted-foreground">{job.company || "Company unavailable"}</p></div>
                           <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-muted-foreground hover:text-primary" onClick={() => void handleSave(job)} disabled={toggleSave.isPending}>{savedIds.has(job._id) ? <Bookmark className="h-4 w-4 fill-current" /> : <BookmarkPlus className="h-4 w-4" />}</Button>
                         </div>
-                        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground"><span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {job.location}</span><span className="flex items-center gap-1"><DollarSign className="h-3 w-3" /> {formatSalary(job)}</span><span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {formatDistanceToNow(new Date(job.createdAt), { addSuffix: true })}</span></div>
-                        <div className="mt-3 flex flex-wrap items-center gap-2"><Badge variant="secondary" className="text-xs capitalize">{job.jobType}</Badge><Badge variant="secondary" className="text-xs capitalize">{job.experienceLevel}</Badge><Badge className="bg-success/10 text-success hover:bg-success/20 text-xs capitalize">{job.workMode === "onsite" ? "On-site" : job.workMode}</Badge>{job.skills.map((skill) => <Badge key={skill} variant="outline" className="text-xs">{skill}</Badge>)}</div>
+                        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground"><span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {job.location || "Location not specified"}</span><span className="flex items-center gap-1"><DollarSign className="h-3 w-3" /> {formatSalary(job)}</span><span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {safeDateDistance(job.createdAt)}</span></div>
+                        <div className="mt-3 flex flex-wrap items-center gap-2"><Badge variant="secondary" className="text-xs capitalize">{job.jobType || "Role type TBD"}</Badge><Badge variant="secondary" className="text-xs capitalize">{job.experienceLevel || "Experience TBD"}</Badge><Badge className="bg-success/10 text-success hover:bg-success/20 text-xs capitalize">{formatWorkMode(job.workMode)}</Badge>{(job.skills || []).map((skill) => <Badge key={skill} variant="outline" className="text-xs">{skill}</Badge>)}</div>
                       </div>
                     </div>
-                    <div className="mt-4 flex justify-end"><Button size="sm" className="gradient-primary border-0 text-xs" asChild><Link to={`/jobs/${job._id}`}>View & Apply</Link></Button></div>
+                    <div className="mt-4 flex justify-end"><Button size="sm" className="text-xs" asChild><Link to={`/jobs/${job._id}`}>View & Apply</Link></Button></div>
                   </CardContent>
                 </Card>
               </motion.div>

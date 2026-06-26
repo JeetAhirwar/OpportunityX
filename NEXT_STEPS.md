@@ -1,12 +1,24 @@
 # Next Steps
 
+- Run browser visual QA for the frontend polish pass across 320px, 375px,
+  768px, 1024px, and wide desktop for public, candidate, recruiter, admin,
+  chat, notification, and AI pages.
+- Add nested lazy loading inside candidate/recruiter/admin dashboard shells to
+  further reduce role-specific chunks after the top-level route split.
+- Create or provide a branded Open Graph image and refreshed favicon for the
+  OpportunityX premium brand package.
 - Phase 6 follow-up: add notification pagination/error-state refinements and
   end-to-end socket authorization tests.
 - Phase 7 follow-up: add durable resume text extraction, structured AI output
   validation, AI audit logging, and integration tests for role authorization.
+- Replace the in-memory AI rate limiter with a distributed store before
+  horizontally scaling multiple backend instances.
 - Phase 8 follow-up: remediate dependency audit findings, expand API
   integration tests, and add browser E2E coverage for candidate/recruiter/admin
   smoke paths.
+- Run a dedicated visual QA pass across authenticated candidate, recruiter,
+  admin, chat, notification, and form-heavy pages on mobile/tablet/desktop
+  after the dark-first SaaS UI refresh.
 - Add a real admin reporting/export pipeline before enabling CSV downloads.
 - Define deletion/cascade or archival rules for users with jobs, applications,
   profiles, messages, and companies before production hard deletion.
@@ -32,7 +44,5 @@
   storage before production deployment.
 - Add integration tests backed by a disposable MongoDB instance for
   candidate/recruiter authorization, unread counters, and socket events.
-- Consider route-level code splitting; the current production bundle triggers
-  Vite's large-chunk warning.
 - Review existing dependency audit findings separately before production
   deployment.

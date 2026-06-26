@@ -11,7 +11,13 @@ const fail = (res, error) =>
   res.status(error.statusCode || 500).json({ success: false, message: error.message || "AI request failed" });
 
 const unavailableResponse = (res, result) =>
-  res.status(503).json({ success: false, unavailable: true, message: result.message });
+  res.status(503).json({
+    success: false,
+    unavailable: true,
+    fallback: true,
+    provider: null,
+    message: result.message,
+  });
 
 const candidateProfile = (userId) => Profile.findOne({ user: userId }).lean();
 

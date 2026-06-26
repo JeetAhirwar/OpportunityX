@@ -1,15 +1,18 @@
 ﻿const express = require("express");
 const router = express.Router();
 const { protect, authorize } = require("../middlewares/auth.middleware");
-const { updateRoleRules, mongoIdParam } = require("../validators");
+const { updateRoleRules, mongoIdParam, adminBootstrapRules, adminCreateUserRules } = require("../validators");
 const {
-  getUsers, updateUserStatus, updateUserRole, deleteUser,
+  bootstrapAdmin, createUser, getUsers, updateUserStatus, updateUserRole, deleteUser,
   getRecruiters, getRecruiter, approveRecruiter, rejectRecruiter,
   getJobs, moderateJob, getApplications, getAnalytics,
 } = require("../controllers/admin.controller");
 
+router.post("/bootstrap", adminBootstrapRules, bootstrapAdmin);
+
 router.use(protect, authorize("admin"));
 
+router.post("/users", adminCreateUserRules, createUser);
 router.get("/users", getUsers);
 router.patch("/users/:id/status", mongoIdParam, updateUserStatus);
 router.patch("/users/:id/role", updateRoleRules, updateUserRole);

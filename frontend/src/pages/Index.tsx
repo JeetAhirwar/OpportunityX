@@ -26,6 +26,24 @@ import Navbar from "@/components/common/Navbar";
 import Footer from "@/components/common/Footer";
 import api from "@/services/api";
 
+type FeaturedJob = {
+  _id: string;
+  title?: string;
+  company?: string;
+  location?: string;
+  jobType?: string;
+  workMode?: string;
+  salary?: { currency?: string; min?: number; max?: number };
+};
+
+const initials = (value?: string) => (value?.trim()?.slice(0, 2) || "OX").toUpperCase();
+
+const formatSalary = (salary?: FeaturedJob["salary"]) => {
+  if (!salary?.min && !salary?.max) return "Salary not specified";
+  const currency = salary.currency || "USD";
+  return `${currency} ${salary.min || 0} - ${salary.max || salary.min || 0}`;
+};
+
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
   visible: (i: number) => ({
@@ -62,7 +80,7 @@ const Index = () =>
   const [searchTitle, setSearchTitle] = useState("");
   const [searchLocation, setSearchLocation] = useState("");
 
-  const [featuredJobs, setFeaturedJobs] = useState([]);
+  const [featuredJobs, setFeaturedJobs] = useState<FeaturedJob[]>([]);
   const [loadingFeatured, setLoadingFeatured] = useState(true);
 
   useEffect(() =>
@@ -71,7 +89,7 @@ const Index = () =>
     {
       try
       {
-        const data = await api.get<{ success: boolean; data: never[] }>(
+        const data = await api.get<{ success: boolean; data: FeaturedJob[] }>(
           "/api/jobs/featured",
           { skipAuth: true }
         );
@@ -80,9 +98,9 @@ const Index = () =>
         {
           setFeaturedJobs(data.data);
         }
-      } catch (error)
+      } catch
       {
-        console.error("Failed to fetch featured jobs", error);
+        setFeaturedJobs([]);
       } finally
       {
         setLoadingFeatured(false);
@@ -97,29 +115,25 @@ const Index = () =>
       <Navbar />
 
       {/* Hero */}
-      <section className="relative overflow-hidden py-20 md:py-32">
-        {/* Background decoration */}
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -right-40 -top-40 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
-          <div className="absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-accent/10 blur-3xl" />
-        </div>
+      <section className="relative overflow-hidden border-b border-border/60 py-20 md:py-28">
+        <div className="surface-grid pointer-events-none absolute inset-0 opacity-70" />
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,hsl(var(--primary)_/_0.18),transparent_38%),linear-gradient(225deg,hsl(var(--accent)_/_0.12),transparent_40%)]" />
 
         <div className="container relative mx-auto px-4">
           <motion.div initial="hidden" animate="visible" className="mx-auto max-w-4xl text-center">
-            <motion.div variants={fadeInUp} custom={0} className="mb-4 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
+            <motion.div variants={fadeInUp} custom={0} className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-4 py-1.5 text-sm font-semibold text-primary shadow-inner">
               <Zap className="h-3.5 w-3.5" /> AI-Powered Job Matching
             </motion.div>
-            <motion.h1 variants={fadeInUp} custom={1} className="mb-6 font-display text-4xl font-bold leading-tight tracking-tight md:text-6xl lg:text-7xl">
-              Find Your Next{" "}
-              <span className="gradient-text">Career Move</span>
+            <motion.h1 variants={fadeInUp} custom={1} className="mb-6 font-display text-4xl font-bold leading-tight md:text-6xl lg:text-7xl">
+              The premium hiring OS for{" "}
+              <span className="gradient-text">modern teams</span>
             </motion.h1>
             <motion.p variants={fadeInUp} custom={2} className="mx-auto mb-10 max-w-2xl text-lg text-muted-foreground md:text-xl">
-              Connect with top companies and discover opportunities that match your skills, experience, and career goals.
+              Discover aligned opportunities, manage candidate pipelines, and move from search to offer inside one polished OpportunityX workspace.
             </motion.p>
 
-            {/* Search bar */}
             <motion.div variants={fadeInUp} custom={3} className="mx-auto max-w-3xl">
-              <div className="glass flex flex-col gap-3 rounded-2xl p-3 shadow-lg md:flex-row md:items-center">
+              <div className="glass-strong flex flex-col gap-3 rounded-lg p-3 shadow-2xl md:flex-row md:items-center">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
@@ -139,7 +153,7 @@ const Index = () =>
                     className="border-0 bg-transparent pl-10 shadow-none focus-visible:ring-0"
                   />
                 </div>
-                <Button size="lg" className="gradient-primary border-0 px-8" asChild>
+                <Button size="lg" className="px-8" asChild>
                   <Link to={`/jobs?q=${searchTitle}&location=${searchLocation}`}>
                     Search Jobs <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
@@ -148,7 +162,7 @@ const Index = () =>
               <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-sm text-muted-foreground">
                 <span>Popular:</span>
                 {["React Developer", "Product Manager", "Data Analyst", "UX Designer"].map((tag) => (
-                  <Link key={tag} to={`/jobs?q=${tag}`} className="rounded-full bg-secondary px-3 py-1 text-xs font-medium transition-colors hover:bg-primary/10 hover:text-primary">
+                  <Link key={tag} to={`/jobs?q=${tag}`} className="rounded-full border border-border/70 bg-secondary/70 px-3 py-1 text-xs font-semibold transition-colors hover:border-primary/30 hover:bg-primary/10 hover:text-primary">
                     {tag}
                   </Link>
                 ))}
@@ -159,7 +173,7 @@ const Index = () =>
       </section>
 
       {/* Stats */}
-      <section className="border-y border-border bg-card/50 py-12">
+      <section className="border-y border-border/70 bg-card/45 py-12 backdrop-blur">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
             {stats.map((stat, i) => (
@@ -171,7 +185,7 @@ const Index = () =>
                 transition={{ delay: i * 0.1 }}
                 className="text-center"
               >
-                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-lg border border-primary/20 bg-primary/10">
                   <stat.icon className="h-6 w-6 text-primary" />
                 </div>
                 <p className="font-display text-3xl font-bold">{stat.value}</p>
@@ -190,7 +204,7 @@ const Index = () =>
               <h2 className="font-display text-3xl font-bold md:text-4xl">Featured Jobs</h2>
               <p className="mt-2 text-muted-foreground">Hand-picked opportunities from top companies</p>
             </div>
-            <Button variant="ghost" className="hidden md:flex" asChild>
+            <Button variant="outline" className="hidden md:flex" asChild>
               <Link to="/jobs">View All Jobs <ChevronRight className="ml-1 h-4 w-4" /></Link>
             </Button>
           </div>
@@ -257,11 +271,11 @@ const Index = () =>
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.05 }}
                 >
-                  <Card className="group cursor-pointer transition-all hover:shadow-lg hover:border-primary/30">
+                  <Card className="group cursor-pointer transition-all hover:-translate-y-1 hover:border-primary/35 hover:shadow-xl">
                     <CardContent className="p-5">
                       <div className="mb-4 flex items-start justify-between">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10 font-display text-sm font-bold text-primary">
-                          {job.company?.substring(0, 2).toUpperCase()}
+                        <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 font-display text-sm font-bold text-primary">
+                          {initials(job.company)}
                         </div>
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
                           <BookmarkPlus className="h-4 w-4" />
@@ -269,20 +283,20 @@ const Index = () =>
                       </div>
 
                       <h3 className="mb-1 font-display font-semibold group-hover:text-primary transition-colors">
-                        {job.title}
+                        {job.title || "Untitled role"}
                       </h3>
 
                       <p className="mb-3 text-sm text-muted-foreground">
-                        {job.company}
+                        {job.company || "Company unavailable"}
                       </p>
 
                       <div className="mb-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3" /> {job.location}
+                          <MapPin className="h-3 w-3" /> {job.location || "Location not specified"}
                         </span>
 
                         <span className="rounded-full bg-secondary px-2 py-0.5">
-                          {job.jobType}
+                          {job.jobType || "Role type TBD"}
                         </span>
 
                         {job.workMode === "remote" && (
@@ -294,7 +308,7 @@ const Index = () =>
 
                       <div className="flex items-center justify-between">
                         <span className="font-display text-sm font-semibold">
-                          {job.salary?.currency} {job.salary?.min} - {job.salary?.max}
+                          {formatSalary(job.salary)}
                         </span>
 
                         <Button size="sm" variant="outline" className="h-8 text-xs" asChild>
@@ -318,7 +332,7 @@ const Index = () =>
       </section>
 
       {/* How It Works */}
-      <section className="bg-card/50 py-20">
+      <section className="border-y border-border/70 bg-card/45 py-20 backdrop-blur">
         <div className="container mx-auto px-4">
           <div className="mb-12 text-center">
             <h2 className="font-display text-3xl font-bold md:text-4xl">How It Works</h2>
@@ -334,7 +348,7 @@ const Index = () =>
                 transition={{ delay: i * 0.1 }}
                 className="relative text-center"
               >
-                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl gradient-primary">
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-lg gradient-primary shadow-lg shadow-primary/20">
                   <step.icon className="h-7 w-7 text-primary-foreground" />
                 </div>
                 <span className="absolute -top-2 left-1/2 -translate-x-1/2 rounded-full bg-accent px-2.5 py-0.5 font-display text-xs font-bold text-accent-foreground">
@@ -351,7 +365,7 @@ const Index = () =>
       {/* AI Feature Highlight */}
       <section className="py-20">
         <div className="container mx-auto px-4">
-          <div className="glass overflow-hidden rounded-3xl">
+          <div className="glass-strong overflow-hidden rounded-lg">
             <div className="grid items-center md:grid-cols-2">
               <div className="p-8 md:p-12">
                 <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-accent/10 px-4 py-1.5 text-sm font-medium text-accent">
@@ -381,7 +395,7 @@ const Index = () =>
                     { match: "89%", title: "Full Stack Developer", company: "StartupXYZ" },
                     { match: "82%", title: "React Team Lead", company: "ScaleUp" },
                   ].map((rec) => (
-                    <div key={rec.title} className="glass rounded-xl p-4 transition-all hover:scale-[1.02]">
+                    <div key={rec.title} className="glass rounded-lg p-4 transition-all hover:scale-[1.02]">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="font-display text-sm font-semibold">{rec.title}</p>
@@ -401,7 +415,7 @@ const Index = () =>
       </section>
 
       {/* Testimonials */}
-      <section className="bg-card/50 py-20">
+      <section className="border-y border-border/70 bg-card/45 py-20 backdrop-blur">
         <div className="container mx-auto px-4">
           <div className="mb-12 text-center">
             <h2 className="font-display text-3xl font-bold md:text-4xl">What People Say</h2>
@@ -444,7 +458,7 @@ const Index = () =>
       {/* CTA */}
       <section className="py-20">
         <div className="container mx-auto px-4">
-          <div className="gradient-primary rounded-3xl p-8 text-center md:p-16">
+          <div className="gradient-primary rounded-lg p-8 text-center shadow-2xl shadow-primary/20 md:p-16">
             <h2 className="mb-4 font-display text-3xl font-bold text-primary-foreground md:text-4xl">
               Ready to Start Your Journey?
             </h2>

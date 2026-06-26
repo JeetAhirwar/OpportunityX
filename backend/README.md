@@ -31,17 +31,34 @@ comma-separated `CORS_ORIGIN` list. Optional `OPENAI_API_KEY` and `AI_MODEL`
 enable `/api/ai` features; missing AI credentials produce unavailable
 responses instead of fake output.
 
+Set `ADMIN_REGISTRATION_CODE` before creating the first admin. The code is
+required by `POST /api/admin/bootstrap`, is never logged or returned, and the
+endpoint disables itself after any admin account exists.
+
+```json
+{
+  "name": "Admin",
+  "email": "admin@opportunityx.com",
+  "password": "Admin@12345",
+  "code": "your-admin-bootstrap-code"
+}
+```
+
+After bootstrap, future admins are managed only by an authenticated admin
+through `POST /api/admin/users` or `PATCH /api/admin/users/:id/role`. Public
+`/api/auth/register` remains limited to candidate and recruiter accounts.
+
 ## API summary
 
 - `/api/health` — service health
-- `/api/auth` — registration and login
+- `/api/auth` — candidate/recruiter registration and login
 - `/api/jobs` — job search and recruiter job management
 - `/api/applications` — applications and applicant status
 - `/api/candidate` — candidate profile
 - `/api/saved-jobs` — saved jobs
 - `/api/notifications` — notifications
 - `/api/recruiter/notes` — recruiter notes
-- `/api/admin` — administration
+- `/api/admin` — first-admin bootstrap and protected administration
 - `/api/public` — public profiles and jobs
 
 Detailed access requirements are in

@@ -1,12 +1,13 @@
 ﻿import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Mail, ArrowRight, Briefcase, ArrowLeft } from "lucide-react";
+import { Mail, ArrowRight, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import api from "@/services/api";
+import OXLogo from "@/components/common/OXLogo";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -29,12 +30,10 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-6">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
+    <div className="dashboard-shell flex min-h-screen items-center justify-center p-6">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="premium-surface w-full max-w-md rounded-lg p-6">
         <Link to="/" className="mb-8 flex items-center gap-2">
-          <div className="gradient-primary flex h-9 w-9 items-center justify-center rounded-lg">
-            <Briefcase className="h-5 w-5 text-primary-foreground" />
-          </div>
+          <OXLogo className="h-9 w-9" />
           <span className="font-display text-xl font-bold">Opportunity<span className="gradient-text">X</span></span>
         </Link>
 
@@ -57,7 +56,7 @@ const ForgotPassword = () => {
           </>
         ) : (
           <div className="text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-success/10">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-lg border border-success/25 bg-success/10">
               <Mail className="h-8 w-8 text-success" />
             </div>
             <h1 className="mb-2 font-display text-2xl font-bold">Check Your Email</h1>

@@ -67,7 +67,7 @@ const FileUpload = ({ accept = ".pdf,.doc,.docx", maxSize = 10, onFileSelect, on
       >
         <Upload className="mb-3 h-8 w-8 text-muted-foreground" />
         <p className="text-sm font-medium">{label}</p>
-        <p className="mt-1 text-xs text-muted-foreground">Drag and drop or click to browse Â· Max {maxSize}MB</p>
+        <p className="mt-1 text-xs text-muted-foreground">Drag and drop or click to browse - Max {maxSize}MB</p>
         <p className="mt-1 text-xs text-muted-foreground">{accept.replace(/\./g, "").toUpperCase().replace(/,/g, ", ")}</p>
       </div>
       {error && <p className="mt-2 text-xs text-destructive">{error}</p>}

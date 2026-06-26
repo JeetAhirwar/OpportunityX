@@ -49,9 +49,9 @@ const DashboardHome = () => {
       api.get<unknown>("/applications/recruiter").then(normalizeApplicants),
       getCompanyProfile(),
     ]).then(([jobData, applicantData, company]) => {
-      setJobs(jobData);
-      setApplicants(applicantData);
-      setVerification(company.verificationStatus);
+      setJobs(Array.isArray(jobData) ? jobData : []);
+      setApplicants(Array.isArray(applicantData) ? applicantData : []);
+      setVerification(company?.verificationStatus || "unverified");
     }).catch((requestError) => setError(requestError instanceof Error ? requestError.message : "Could not load dashboard"))
       .finally(() => setLoading(false));
   }, []);
@@ -91,11 +91,11 @@ const DashboardHome = () => {
       </div>
       <div className="grid gap-6 lg:grid-cols-2">
         <Card><CardHeader><CardTitle className="text-lg">Recent Applications</CardTitle></CardHeader><CardContent className="space-y-3">
-          {applicants.slice(0, 5).map((item) => <div key={item._id} className="rounded-lg bg-secondary/50 p-3"><p className="text-sm font-medium">{item.candidate.name}</p><p className="text-xs text-muted-foreground">{item.job.title} · {item.status}</p></div>)}
+          {applicants.slice(0, 5).map((item) => <div key={item._id} className="rounded-lg bg-secondary/50 p-3"><p className="text-sm font-medium">{item.candidate?.name || "Candidate unavailable"}</p><p className="text-xs text-muted-foreground">{item.job?.title || "Job unavailable"} - {item.status}</p></div>)}
           {!applicants.length && <p className="text-sm text-muted-foreground">No applicants yet.</p>}
         </CardContent></Card>
         <Card><CardHeader><CardTitle className="text-lg">Recent Jobs</CardTitle></CardHeader><CardContent className="space-y-3">
-          {jobs.slice(0, 5).map((job) => <Link key={job._id} to={`/recruiter/jobs/${job._id}/edit`} className="block rounded-lg bg-secondary/50 p-3"><p className="text-sm font-medium">{job.title}</p><p className="text-xs text-muted-foreground">{job.status} · {job.applicantCount || 0} applicants</p></Link>)}
+          {jobs.slice(0, 5).map((job) => <Link key={job._id} to={`/recruiter/jobs/${job._id}/edit`} className="block rounded-lg bg-secondary/50 p-3"><p className="text-sm font-medium">{job.title || "Untitled role"}</p><p className="text-xs text-muted-foreground">{job.status || "draft"} - {job.applicantCount || 0} applicants</p></Link>)}
           {!jobs.length && <p className="text-sm text-muted-foreground">No jobs posted yet.</p>}
         </CardContent></Card>
       </div>
@@ -106,32 +106,36 @@ const DashboardHome = () => {
 };
 
 const RecruiterDashboard = () => {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="dashboard-shell min-h-screen">
       <Navbar />
       <div className="flex">
         <Button variant="ghost" size="icon" className="fixed bottom-4 right-4 z-50 h-12 w-12 rounded-full shadow-lg gradient-primary border-0 md:hidden" onClick={() => setSidebarOpen(!sidebarOpen)}>
           {sidebarOpen ? <X className="h-5 w-5 text-primary-foreground" /> : <Menu className="h-5 w-5 text-primary-foreground" />}
         </Button>
-        <aside className={`fixed inset-y-0 left-0 z-40 w-64 transform border-r border-border bg-card pt-16 transition-transform md:sticky md:top-16 md:h-[calc(100vh-4rem)] md:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        <aside className={`fixed inset-y-0 left-0 z-40 w-72 transform border-r border-border/70 bg-sidebar/95 pt-16 shadow-2xl backdrop-blur-2xl transition-transform md:sticky md:top-16 md:h-[calc(100vh-4rem)] md:translate-x-0 md:shadow-none ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
           <nav className="space-y-1 p-4 overflow-y-auto h-full">
+            <div className="mb-4 rounded-lg border border-border/70 bg-secondary/40 p-3">
+              <p className="text-xs font-semibold uppercase text-muted-foreground">Recruiter command</p>
+              <p className="mt-1 truncate text-sm font-semibold">{user?.name || "Hiring team"}</p>
+            </div>
             {sidebarLinks.map((link) => (
               <Link key={link.href} to={link.href} onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${location.pathname === link.href ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary"}`}>
+                className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-semibold transition-all ${location.pathname === link.href ? "bg-primary/15 text-primary shadow-inner" : "text-muted-foreground hover:bg-secondary/70 hover:text-foreground"}`}>
                 <link.icon className="h-4 w-4" /> {link.label}
               </Link>
             ))}
-            <button onClick={logout} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors">
+            <button onClick={logout} className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/10">
               <LogOut className="h-4 w-4" /> Logout
             </button>
           </nav>
         </aside>
-        {sidebarOpen && <div className="fixed inset-0 z-30 bg-background/50 md:hidden" onClick={() => setSidebarOpen(false)} />}
-        <main className="flex-1 p-6 md:p-8">
+        {sidebarOpen && <div className="fixed inset-0 z-30 bg-background/70 backdrop-blur-sm md:hidden" onClick={() => setSidebarOpen(false)} />}
+        <main className="min-w-0 flex-1 p-4 sm:p-6 md:p-8">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <Routes>
               <Route path="dashboard" element={<DashboardHome />} />
@@ -140,6 +144,7 @@ const RecruiterDashboard = () => {
               <Route path="jobs/:id/edit" element={<PostJob />} />
               <Route path="applicants" element={<ApplicantManagement />} />
               <Route path="applicants/:jobId" element={<ApplicantManagement />} />
+              <Route path="profile" element={<CompanyProfile />} />
               <Route path="company" element={<CompanyProfile />} />
               <Route path="analytics" element={<RecruiterAnalytics />} />
               <Route path="chat" element={<ChatPage />} />

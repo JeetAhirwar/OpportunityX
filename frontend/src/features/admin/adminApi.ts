@@ -60,6 +60,13 @@ export interface AdminAnalytics {
   recentApplications: AdminApplication[];
 }
 
+export interface CreateAdminUserPayload {
+  name: string;
+  email: string;
+  password: string;
+  role: AdminUser["role"];
+}
+
 const asRecord = (value: unknown): Record<string, unknown> =>
   value !== null && typeof value === "object" ? value as Record<string, unknown> : {};
 export const unwrapAdminData = (response: unknown) => {
@@ -68,6 +75,11 @@ export const unwrapAdminData = (response: unknown) => {
 };
 
 export const getAdminUsers = async () => unwrapAdminData(await api.get<unknown>("/admin/users")) as AdminUser[];
+export const createAdminUser = async (payload: CreateAdminUserPayload) => {
+  const response = unwrapAdminData(await api.post<unknown>("/admin/users", payload));
+  const data = asRecord(response);
+  return (data.user ?? response) as AdminUser;
+};
 export const getAdminRecruiters = async () => unwrapAdminData(await api.get<unknown>("/admin/recruiters")) as AdminCompany[];
 export const getAdminJobs = async () => unwrapAdminData(await api.get<unknown>("/admin/jobs")) as Job[];
 export const getAdminApplications = async () => unwrapAdminData(await api.get<unknown>("/admin/applications")) as AdminApplication[];

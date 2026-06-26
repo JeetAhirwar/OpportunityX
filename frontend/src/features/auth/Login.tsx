@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { getDashboardPath } from "@/utils/authRoutes";
+import OXLogo from "@/components/common/OXLogo";
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -32,25 +33,22 @@ const Login = () => {
   };
 
   return (
-    <div className="flex min-h-screen">
-      {/* Left side - decorative */}
-      <div className="hidden w-1/2 items-center justify-center gradient-primary lg:flex">
-        <div className="max-w-md p-12 text-center">
-          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-foreground/20">
-            <Briefcase className="h-8 w-8 text-primary-foreground" />
+    <div className="dashboard-shell flex min-h-screen">
+      <div className="relative hidden w-1/2 items-center justify-center overflow-hidden border-r border-border/70 bg-card/45 lg:flex">
+        <div className="surface-grid absolute inset-0 opacity-60" />
+        <div className="relative max-w-md p-12 text-center">
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-lg border border-primary/30 bg-primary/10">
+            <Briefcase className="h-8 w-8 text-primary" />
           </div>
-          <h2 className="mb-4 font-display text-3xl font-bold text-primary-foreground">Welcome Back</h2>
-          <p className="text-primary-foreground/70">Sign in to access your dashboard, manage applications, and discover new opportunities.</p>
+          <h2 className="mb-4 font-display text-3xl font-bold">Welcome Back</h2>
+          <p className="text-muted-foreground">Sign in to access your dashboard, manage applications, and discover new opportunities.</p>
         </div>
       </div>
 
-      {/* Right side - form */}
-      <div className="flex w-full items-center justify-center bg-background p-6 lg:w-1/2">
-        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="w-full max-w-md">
+      <div className="flex w-full items-center justify-center p-6 lg:w-1/2">
+        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="premium-surface w-full max-w-md rounded-lg p-6">
           <Link to="/" className="mb-8 flex items-center gap-2">
-            <div className="gradient-primary flex h-9 w-9 items-center justify-center rounded-lg">
-              <Briefcase className="h-5 w-5 text-primary-foreground" />
-            </div>
+            <OXLogo className="h-9 w-9" />
             <span className="font-display text-xl font-bold">Opportunity<span className="gradient-text">X</span></span>
           </Link>
 

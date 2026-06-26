@@ -31,6 +31,14 @@ const formatSalary = (job: Job) => {
   return min && max ? `${formatter.format(min)} - ${formatter.format(max)}` : formatter.format(min || max);
 };
 
+const companyInitials = (company?: string) => (company?.trim()?.slice(0, 2) || "OX").toUpperCase();
+const formatWorkMode = (workMode?: string) => workMode === "onsite" ? "On-site" : workMode ? `${workMode.charAt(0).toUpperCase()}${workMode.slice(1)}` : "Work mode TBD";
+const safeDateDistance = (date?: string) => {
+  if (!date) return "Date unavailable";
+  const parsed = new Date(date);
+  return Number.isNaN(parsed.getTime()) ? "Date unavailable" : formatDistanceToNow(parsed, { addSuffix: true });
+};
+
 const JobDetail = () => {
   const { id } = useParams();
   const location = useLocation();
@@ -155,14 +163,16 @@ const JobDetail = () => {
   }
 
   const salary = formatSalary(job);
-  const workMode = job.workMode === "onsite" ? "On-site" : `${job.workMode.charAt(0).toUpperCase()}${job.workMode.slice(1)}`;
-  const deadline = job.deadline ? format(new Date(job.deadline), "PPP") : "Not specified";
+  const workMode = formatWorkMode(job.workMode);
+  const deadlineDate = job.deadline ? new Date(job.deadline) : null;
+  const deadline = deadlineDate && !Number.isNaN(deadlineDate.getTime()) ? format(deadlineDate, "PPP") : "Not specified";
+  const skills = job.skills || [];
 
   return (
     <div className="min-h-screen bg-background">
       <SEOHead
-        title={`${job.title} at ${job.company} — OpportunityX`}
-        description={`Apply for ${job.title} at ${job.company}. ${salary} · ${job.location}`}
+        title={`${job.title} at ${job.company} - OpportunityX`}
+        description={`Apply for ${job.title} at ${job.company}. ${salary} - ${job.location}`}
         jsonLd={{
           "@context": "https://schema.org",
           "@type": "JobPosting",
@@ -183,23 +193,23 @@ const JobDetail = () => {
         <div className="grid gap-8 lg:grid-cols-3">
           <div className="space-y-6 lg:col-span-2">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-              <Card>
+              <Card className="overflow-hidden">
                 <CardContent className="p-6 md:p-8">
                   <div className="flex items-start gap-4">
-                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary/10 font-display text-lg font-bold text-primary">{job.company.slice(0, 2).toUpperCase()}</div>
+                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 font-display text-lg font-bold text-primary">{companyInitials(job.company)}</div>
                     <div className="flex-1">
-                      <h1 className="font-display text-2xl font-bold md:text-3xl">{job.title}</h1>
-                      <p className="mt-1 text-lg text-muted-foreground">{job.company}</p>
-                      <div className="mt-3 flex flex-wrap gap-2">{job.skills.map((skill) => <Badge key={skill} variant="secondary">{skill}</Badge>)}</div>
+                      <h1 className="font-display text-2xl font-bold md:text-3xl">{job.title || "Untitled role"}</h1>
+                      <p className="mt-1 text-lg text-muted-foreground">{job.company || "Company unavailable"}</p>
+                      <div className="mt-3 flex flex-wrap gap-2">{skills.map((skill) => <Badge key={skill} variant="secondary">{skill}</Badge>)}</div>
                     </div>
                   </div>
 
                   <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
                     {[
-                      { icon: MapPin, label: job.location },
+                      { icon: MapPin, label: job.location || "Location not specified" },
                       { icon: DollarSign, label: salary },
-                      { icon: Briefcase, label: job.jobType },
-                      { icon: Clock, label: formatDistanceToNow(new Date(job.createdAt), { addSuffix: true }) },
+                      { icon: Briefcase, label: job.jobType || "Role type TBD" },
+                      { icon: Clock, label: safeDateDistance(job.createdAt) },
                     ].map((item) => (
                       <div key={item.label} className="flex items-center gap-2 text-sm capitalize text-muted-foreground"><item.icon className="h-4 w-4" /> {item.label}</div>
                     ))}
@@ -209,7 +219,7 @@ const JobDetail = () => {
                     {applied ? (
                       <Button disabled className="bg-success text-success-foreground"><CheckCircle2 className="mr-2 h-4 w-4" /> Applied</Button>
                     ) : (
-                      <Button className="gradient-primary border-0" onClick={openApplication}>Apply Now</Button>
+                      <Button onClick={openApplication}>Apply Now</Button>
                     )}
                     <Button variant="outline" onClick={() => void handleSave()} disabled={toggleSave.isPending}>
                       {saved ? <Bookmark className="mr-2 h-4 w-4 fill-current" /> : <BookmarkPlus className="mr-2 h-4 w-4" />}
@@ -233,10 +243,10 @@ const JobDetail = () => {
                       ["Work mode", workMode],
                       ["Job type", job.jobType],
                       ["Application deadline", deadline],
-                    ].map(([label, value]) => <div key={label} className="rounded-lg bg-secondary p-3"><p className="text-xs uppercase text-muted-foreground">{label}</p><p className="mt-1 font-medium capitalize">{value}</p></div>)}
+                    ].map(([label, value]) => <div key={label} className="rounded-lg border border-border/70 bg-secondary/60 p-3"><p className="text-xs uppercase text-muted-foreground">{label}</p><p className="mt-1 font-medium capitalize">{value}</p></div>)}
                   </div>
                 </div>
-                {job.skills.length > 0 && <><Separator /><div><h2 className="mb-3 font-display text-xl font-semibold">Required Skills</h2><div className="flex flex-wrap gap-2">{job.skills.map((skill) => <Badge key={skill} variant="outline">{skill}</Badge>)}</div></div></>}
+                {skills.length > 0 && <><Separator /><div><h2 className="mb-3 font-display text-xl font-semibold">Required Skills</h2><div className="flex flex-wrap gap-2">{skills.map((skill) => <Badge key={skill} variant="outline">{skill}</Badge>)}</div></div></>}
               </CardContent>
             </Card>
           </div>
@@ -267,9 +277,9 @@ const JobDetail = () => {
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Apply to {job.title}</DialogTitle><DialogDescription>at {job.company} · {job.location}</DialogDescription></DialogHeader>
-          <div className="space-y-3"><p className="text-sm text-muted-foreground">Your profile and resume will be shared with the recruiter.</p><Textarea placeholder="Cover letter (optional) — Tell the recruiter why you're a great fit..." value={coverLetter} onChange={(event) => setCoverLetter(event.target.value)} rows={5} /></div>
-          <DialogFooter><Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button><Button onClick={() => void handleApply()} disabled={apply.isPending} className="gradient-primary border-0">{apply.isPending ? "Submitting..." : "Submit Application"}</Button></DialogFooter>
+          <DialogHeader><DialogTitle>Apply to {job.title}</DialogTitle><DialogDescription>at {job.company} - {job.location}</DialogDescription></DialogHeader>
+          <div className="space-y-3"><p className="text-sm text-muted-foreground">Your profile and resume will be shared with the recruiter.</p><Textarea placeholder="Cover letter (optional) - Tell the recruiter why you're a great fit..." value={coverLetter} onChange={(event) => setCoverLetter(event.target.value)} rows={5} /></div>
+          <DialogFooter><Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button><Button onClick={() => void handleApply()} disabled={apply.isPending}>{apply.isPending ? "Submitting..." : "Submit Application"}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
       <Footer />

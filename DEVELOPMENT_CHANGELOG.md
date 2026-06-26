@@ -1,5 +1,36 @@
 # Development Changelog
 
+## 2026-06-26
+
+- Completed a frontend-only OpportunityX Premium UI/UX stabilization pass:
+  added route-level code splitting, tightened production metadata, removed
+  prominent broken shell links, improved navbar/footer accessibility, hardened
+  public job cards/detail pages against partial API data, and added safer
+  recruiter/admin dashboard empty states without backend changes.
+- Added `FRONTEND_UI_AUDIT.md` with findings for UI consistency, mobile,
+  accessibility, performance, branding, broken links, and follow-up QA.
+- Added a backend-only AI provider fallback system with Gemini primary support,
+  OpenRouter/Groq/OpenAI fallbacks, friendly unavailable responses, per-user
+  daily AI limiting, provider-safe logging, and frontend AI error sanitization.
+- Upgraded the frontend visual system to a dark-first premium SaaS direction:
+  refreshed tokens, glass surfaces, buttons, inputs, cards, dialogs, page
+  headers, empty states, navbar, footer, auth pages, dashboard shells, and job
+  browse/detail surfaces while preserving existing frontend routes and API
+  integrations.
+- Added `POST /api/admin/bootstrap` for secure first-admin creation guarded by
+  `ADMIN_REGISTRATION_CODE` and disabled after any admin exists.
+- Added authenticated admin-managed `POST /api/admin/users` creation for
+  candidate, recruiter, and admin accounts, plus Admin Users page creation
+  controls.
+- Hardened admin status, role, and delete actions against removing the last
+  remaining admin, while allowing explicit confirmed self-demotion when another
+  admin exists.
+- Kept public `/api/auth/register` limited to candidate and recruiter roles
+  and documented the manual first-admin bootstrap flow.
+- Added backend tests for valid bootstrap, invalid bootstrap codes, second
+  bootstrap rejection, public admin registration rejection, and safe admin
+  responses without password hashes.
+
 ## 2026-06-25 Phase 7 and 8
 
 - Added backend AI service/provider abstraction with backend-only

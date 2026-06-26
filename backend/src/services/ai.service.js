@@ -1,6 +1,19 @@
 const env = require("../config/env");
+const gemini = require("./ai.gemini.provider");
+const openrouter = require("./ai.openrouter.provider");
+const groq = require("./ai.groq.provider");
+const openai = require("./ai.openai.provider");
 
 const MAX_TEXT = 6000;
+const PROVIDERS = {
+  gemini,
+  openrouter,
+  groq,
+  openai,
+};
+
+const FRIENDLY_UNAVAILABLE = "AI helper is temporarily unavailable. Please try again later.";
+const FRIENDLY_QUOTA = "Free AI quota is currently unavailable. Please try again later or switch provider.";
 
 const sanitizeText = (value, max = MAX_TEXT) =>
   String(value || "")
@@ -9,70 +22,135 @@ const sanitizeText = (value, max = MAX_TEXT) =>
     .trim()
     .slice(0, max);
 
-const unavailable = () => ({
+const providerOrder = () => {
+  const configured = [env.aiProvider, ...env.aiFallbackProviders]
+    .map((provider) => String(provider || "").trim().toLowerCase())
+    .filter(Boolean);
+  return [...new Set(configured)].filter((provider) => PROVIDERS[provider]);
+};
+
+const unavailable = (message = FRIENDLY_UNAVAILABLE, category = "provider_unavailable") => ({
+  success: false,
   unavailable: true,
-  message: "AI is unavailable because OPENAI_API_KEY is not configured on the backend.",
+  fallback: true,
+  provider: null,
+  message,
+  category,
 });
 
-const extractText = (data) => {
-  if (typeof data?.output_text === "string") return data.output_text;
-  const output = Array.isArray(data?.output) ? data.output : [];
-  return output
-    .flatMap((item) => Array.isArray(item.content) ? item.content : [])
-    .map((part) => part.text || "")
-    .join("\n")
+const cleanJsonText = (text) => {
+  const trimmed = String(text || "").trim();
+  const withoutFence = trimmed
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/```$/i, "")
     .trim();
+  const firstObject = withoutFence.indexOf("{");
+  const lastObject = withoutFence.lastIndexOf("}");
+  const firstArray = withoutFence.indexOf("[");
+  const lastArray = withoutFence.lastIndexOf("]");
+
+  if (firstObject >= 0 && lastObject > firstObject) return withoutFence.slice(firstObject, lastObject + 1);
+  if (firstArray >= 0 && lastArray > firstArray) return withoutFence.slice(firstArray, lastArray + 1);
+  return withoutFence;
 };
 
 const parseJson = (text, fallback) => {
   try {
-    const trimmed = text.replace(/^```json\s*/i, "").replace(/```$/i, "").trim();
-    return JSON.parse(trimmed);
+    return JSON.parse(cleanJsonText(text));
   } catch {
-    return fallback(text);
+    const parsedFallback = fallback(text);
+    return {
+      ...parsedFallback,
+      limitations: [
+        ...(Array.isArray(parsedFallback.limitations) ? parsedFallback.limitations : []),
+        "AI returned a non-JSON response; OpportunityX used a structured fallback.",
+      ],
+    };
   }
 };
 
-const callProvider = async ({ system, user }) => {
-  if (!env.openaiApiKey) return unavailable();
+const safeLogProviderFailure = (provider, error) => {
+  const category = error?.category || "provider_error";
+  console.warn(`AI provider failed: provider=${provider} category=${category}`);
+};
 
-  const response = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${env.openaiApiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: env.aiModel,
-      input: [
-        { role: "system", content: sanitizeText(system, 2000) },
-        { role: "user", content: sanitizeText(user) },
-      ],
-    }),
-  });
+const generateAIResponse = async ({
+  systemPrompt,
+  userPrompt,
+  temperature = 0.4,
+  maxTokens = 800,
+  jsonMode = false,
+  metadata = {},
+}) => {
+  const system = sanitizeText(systemPrompt, 2500);
+  const user = sanitizeText(userPrompt);
+  const failures = [];
 
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const error = new Error(data?.error?.message || "AI provider request failed");
-    error.statusCode = response.status >= 500 ? 502 : response.status;
-    throw error;
+  for (const providerName of providerOrder()) {
+    const provider = PROVIDERS[providerName];
+    try {
+      const result = await provider.generate({
+        systemPrompt: system,
+        userPrompt: user,
+        temperature,
+        maxTokens,
+        jsonMode,
+        metadata,
+      });
+      return {
+        success: true,
+        provider: result.provider,
+        model: result.model,
+        text: result.text,
+      };
+    } catch (error) {
+      const category = error?.category || "provider_error";
+      failures.push({ provider: providerName, category });
+      safeLogProviderFailure(providerName, error);
+    }
   }
 
-  return { unavailable: false, text: extractText(data) };
+  const quotaFailed = failures.some((failure) => failure.category === "quota_or_rate_limit");
+  return unavailable(quotaFailed ? FRIENDLY_QUOTA : FRIENDLY_UNAVAILABLE, quotaFailed ? "quota_or_rate_limit" : "provider_unavailable");
+};
+
+const callProvider = async ({ system, user, temperature, maxTokens, jsonMode, metadata }) => {
+  const result = await generateAIResponse({
+    systemPrompt: system,
+    userPrompt: user,
+    temperature,
+    maxTokens,
+    jsonMode,
+    metadata,
+  });
+  if (!result.success) return result;
+  return {
+    unavailable: false,
+    provider: result.provider,
+    model: result.model,
+    text: result.text,
+  };
 };
 
 const jsonPrompt = async (prompt, fallback) => {
-  const result = await callProvider({
-    system: "You are OpportunityX hiring intelligence. Return concise, valid JSON only. Do not include secrets, sensitive private data, or unsupported claims.",
-    user: prompt,
+  const result = await generateAIResponse({
+    systemPrompt: "You are OpportunityX hiring intelligence. Return concise, valid JSON only. Do not include secrets, sensitive private data, or unsupported claims.",
+    userPrompt: prompt,
+    temperature: 0.25,
+    maxTokens: 1200,
+    jsonMode: true,
   });
-  if (result.unavailable) return result;
+  if (!result.success) return result;
   return parseJson(result.text, fallback);
 };
 
 module.exports = {
   callProvider,
+  generateAIResponse,
   jsonPrompt,
+  parseJson,
   sanitizeText,
   unavailable,
+  FRIENDLY_UNAVAILABLE,
+  FRIENDLY_QUOTA,
 };

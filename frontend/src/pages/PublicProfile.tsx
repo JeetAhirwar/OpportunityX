@@ -2,7 +2,7 @@
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  MapPin, Briefcase, GraduationCap, Building2, FolderOpen, Globe,
+  MapPin, GraduationCap, Building2, FolderOpen, Globe,
   Award, Download, ExternalLink, Github, Linkedin, ArrowLeft, User,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,47 +16,19 @@ import SEOHead from "@/components/common/SEOHead";
 import api from "@/services/api";
 import type { Profile } from "@/types";
 
-const mockProfile: Profile = {
-  name: "Arjun Mehta",
-  phone: "",
-  location: "Bengaluru, Karnataka",
-  title: "Full Stack Developer",
-  bio: "Passionate full stack developer with 4+ years of experience building scalable web applications. Proficient in React, Node.js, and cloud technologies. Love to create elegant solutions to complex problems.",
-  photo: "",
-  candidateType: "experienced",
-  skills: ["React", "TypeScript", "Node.js", "MongoDB", "AWS", "Docker", "GraphQL", "Tailwind CSS"],
-  education: [
-    { school: "IIT Delhi", degree: "B.Tech Computer Science", year: "2020" },
-    { school: "DPS R.K. Puram", degree: "Class XII CBSE", year: "2016" },
-  ],
-  experience: [
-    { company: "Flipkart", role: "SDE-2", duration: "Jan 2022 - Present", description: "Building large-scale e-commerce frontend with React and micro-frontends architecture." },
-    { company: "Infosys", role: "Systems Engineer", duration: "Jul 2020 - Dec 2021", description: "Developed RESTful APIs and maintained enterprise Java applications." },
-  ],
-  projects: [
-    { name: "DevConnect", url: "https://github.com/arjun/devconnect", description: "A social platform for developers with real-time chat and project collaboration features." },
-    { name: "CloudDeploy", url: "https://github.com/arjun/clouddeploy", description: "CLI tool for automated deployment to AWS, GCP, and Azure." },
-  ],
-  certifications: [
-    { name: "AWS Solutions Architect", issuer: "Amazon Web Services", year: "2023", credentialUrl: "" },
-    { name: "Meta Frontend Developer", issuer: "Meta / Coursera", year: "2022", credentialUrl: "" },
-  ],
-  socials: { linkedin: "https://linkedin.com/in/arjunmehta", github: "https://github.com/arjunmehta", portfolio: "https://arjunmehta.dev" },
-  resumeUrl: "#",
-};
-
 const PublicProfile = () => {
   const { username } = useParams();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const fetch = async () => {
       try {
         const data = await api.get<Profile>(`/profile/${username}`, { skipAuth: true });
         setProfile(data);
-      } catch {
-        setProfile(mockProfile); // Fallback for demo
+      } catch (requestError) {
+        setError(requestError instanceof Error ? requestError.message : "Could not load profile");
       } finally {
         setLoading(false);
       }
@@ -78,12 +50,25 @@ const PublicProfile = () => {
     );
   }
 
-  if (!profile) return null;
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container mx-auto px-4 py-20 text-center">
+          <User className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+          <h1 className="font-display text-2xl font-bold">Profile unavailable</h1>
+          <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">{error || "This public profile could not be found."}</p>
+          <Button className="mt-6" variant="outline" asChild><Link to="/jobs">Browse Jobs</Link></Button>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
       <SEOHead
-        title={`${profile.name} â€” OpportunityX`}
+        title={`${profile.name} - OpportunityX`}
         description={profile.bio?.slice(0, 155) || `${profile.name}'s professional profile`}
         canonical={`https://opportunityx.com/profile/${username}`}
         jsonLd={{
@@ -173,7 +158,7 @@ const PublicProfile = () => {
                       <div key={i} className="relative pl-6 border-l-2 border-border pb-4 last:pb-0">
                         <div className="absolute -left-[7px] top-1 h-3 w-3 rounded-full bg-primary" />
                         <h3 className="font-semibold">{exp.role}</h3>
-                        <p className="text-sm text-muted-foreground">{exp.company} Â· {exp.duration}</p>
+                        <p className="text-sm text-muted-foreground">{exp.company} - {exp.duration}</p>
                         {exp.description && <p className="mt-1 text-sm text-muted-foreground">{exp.description}</p>}
                       </div>
                     ))}
@@ -192,7 +177,7 @@ const PublicProfile = () => {
                       <div key={i} className="relative pl-6 border-l-2 border-border pb-4 last:pb-0">
                         <div className="absolute -left-[7px] top-1 h-3 w-3 rounded-full bg-accent" />
                         <h3 className="font-semibold">{edu.degree}</h3>
-                        <p className="text-sm text-muted-foreground">{edu.school} Â· {edu.year}</p>
+                        <p className="text-sm text-muted-foreground">{edu.school} - {edu.year}</p>
                       </div>
                     ))}
                   </div>
@@ -248,7 +233,7 @@ const PublicProfile = () => {
                     {profile.certifications.map((cert, i) => (
                       <div key={i} className="rounded-lg bg-muted p-3">
                         <p className="font-medium text-sm">{cert.name}</p>
-                        <p className="text-xs text-muted-foreground">{cert.issuer} Â· {cert.year}</p>
+                        <p className="text-xs text-muted-foreground">{cert.issuer} - {cert.year}</p>
                       </div>
                     ))}
                   </div>

@@ -27,8 +27,21 @@ module.exports = Object.freeze({
     pass: process.env.SMTP_PASS || "",
   }),
   emailFrom: process.env.EMAIL_FROM || "OpportunityX <no-reply@opportunityx.local>",
+  aiProvider: process.env.AI_PROVIDER || "gemini",
+  aiFallbackProviders: (process.env.AI_FALLBACK_PROVIDERS || "openrouter,groq,openai")
+    .split(",")
+    .map((provider) => provider.trim().toLowerCase())
+    .filter(Boolean),
+  aiDailyLimitPerUser: Number(process.env.AI_DAILY_LIMIT_PER_USER || 50),
+  geminiApiKey: /^replace_/i.test(process.env.GEMINI_API_KEY || "") ? "" : process.env.GEMINI_API_KEY || "",
+  geminiModel: process.env.AI_MODEL || process.env.GEMINI_MODEL || "gemini-1.5-flash",
+  openrouterApiKey: /^replace_/i.test(process.env.OPENROUTER_API_KEY || "") ? "" : process.env.OPENROUTER_API_KEY || "",
+  openrouterModel: process.env.OPENROUTER_MODEL || "deepseek/deepseek-chat",
+  groqApiKey: /^replace_/i.test(process.env.GROQ_API_KEY || "") ? "" : process.env.GROQ_API_KEY || "",
+  groqModel: process.env.GROQ_MODEL || "llama-3.1-8b-instant",
   openaiApiKey: /^replace_/i.test(process.env.OPENAI_API_KEY || "") ? "" : process.env.OPENAI_API_KEY || "",
-  aiModel: process.env.AI_MODEL || "gpt-4.1-mini",
+  openaiModel: process.env.OPENAI_MODEL || "gpt-4.1-mini",
+  aiModel: process.env.AI_MODEL || "gemini-1.5-flash",
   socketCorsOrigins: (process.env.SOCKET_CORS_ORIGIN || process.env.CORS_ORIGIN || "http://localhost:8080")
     .split(",")
     .map((origin) => origin.trim())

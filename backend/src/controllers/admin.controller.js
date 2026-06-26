@@ -1,3 +1,4 @@
+const crypto = require("crypto");
 const User = require("../models/user.model");
 const Job = require("../models/job.model");
 const Application = require("../models/application.model");
@@ -6,6 +7,112 @@ const Notification = require("../models/notification.model");
 
 const safeUserFields = "name email role isActive isVerified lastLogin createdAt updatedAt";
 const isSelf = (req) => String(req.user._id) === String(req.params.id);
+const safeUser = (user) => ({
+  _id: user._id,
+  name: user.name,
+  email: user.email,
+  role: user.role,
+  isActive: user.isActive,
+  isVerified: user.isVerified,
+  createdAt: user.createdAt,
+  updatedAt: user.updatedAt,
+});
+
+const codesMatch = (providedCode, expectedCode) => {
+  if (!providedCode || !expectedCode) return false;
+  const provided = Buffer.from(String(providedCode));
+  const expected = Buffer.from(String(expectedCode));
+  return provided.length === expected.length && crypto.timingSafeEqual(provided, expected);
+};
+
+const countAdmins = (filter = {}) => User.countDocuments({ role: "admin", ...filter });
+
+const ensureNotLastAdmin = async (user, res, action) => {
+  if (!user || user.role !== "admin") return false;
+  const adminCount = await countAdmins();
+  if (adminCount <= 1) {
+    res.status(400).json({
+      success: false,
+      message: `Cannot ${action} the last remaining admin account.`,
+    });
+    return true;
+  }
+
+  const activeAdminCount = user.isActive === false ? 2 : await countAdmins({ isActive: true });
+  if (activeAdminCount <= 1) {
+    res.status(400).json({
+      success: false,
+      message: `Cannot ${action} the last remaining admin account.`,
+    });
+    return true;
+  }
+  return false;
+};
+
+exports.bootstrapAdmin = async (req, res) => {
+  try {
+    const existingAdmin = await User.findOne({ role: "admin" });
+    if (existingAdmin) {
+      return res.status(403).json({ success: false, message: "Admin bootstrap is already disabled" });
+    }
+
+    const expectedCode = process.env.ADMIN_REGISTRATION_CODE;
+    if (!expectedCode || !codesMatch(req.body.code, expectedCode)) {
+      return res.status(403).json({ success: false, message: "Invalid admin bootstrap code" });
+    }
+
+    const userExists = await User.findOne({ email: req.body.email });
+    if (userExists) {
+      return res.status(400).json({ success: false, message: "User already exists" });
+    }
+
+    const user = await User.create({
+      name: req.body.name,
+      email: req.body.email,
+      password: req.body.password,
+      role: "admin",
+      isActive: true,
+      isVerified: true,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Admin account created successfully",
+      data: {
+        user: safeUser(user),
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: "Unable to bootstrap admin account" });
+  }
+};
+
+exports.createUser = async (req, res) => {
+  try {
+    const { name, email, password, role } = req.body;
+    const userExists = await User.findOne({ email });
+    if (userExists) return res.status(400).json({ success: false, message: "User already exists" });
+
+    const user = await User.create({
+      name,
+      email,
+      password,
+      role,
+      isActive: true,
+      isVerified: role === "admin",
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "User created successfully",
+      data: {
+        user: safeUser(user),
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: "Unable to create user" });
+  }
+};
 
 exports.getUsers = async (req, res) => {
   try {
@@ -26,17 +133,23 @@ exports.updateUserStatus = async (req, res) => {
   try {
     if (isSelf(req)) return res.status(400).json({ success: false, message: "You cannot suspend your own admin account." });
     if (typeof req.body.isActive !== "boolean") return res.status(400).json({ success: false, message: "isActive must be a boolean." });
+    const target = await User.findById(req.params.id).select(safeUserFields);
+    if (!target) return res.status(404).json({ success: false, message: "User not found" });
+    if (req.body.isActive === false && await ensureNotLastAdmin(target, res, "suspend")) return;
     const user = await User.findByIdAndUpdate(req.params.id, { isActive: req.body.isActive }, { new: true }).select(safeUserFields);
-    if (!user) return res.status(404).json({ success: false, message: "User not found" });
     res.json({ success: true, data: user });
   } catch (error) { res.status(500).json({ success: false, message: error.message }); }
 };
 
 exports.updateUserRole = async (req, res) => {
   try {
-    if (isSelf(req)) return res.status(400).json({ success: false, message: "You cannot change your own admin role." });
+    const target = await User.findById(req.params.id).select(safeUserFields);
+    if (!target) return res.status(404).json({ success: false, message: "User not found" });
+    if (isSelf(req) && req.body.role !== "admin" && req.body.confirm !== true) {
+      return res.status(400).json({ success: false, message: "Confirm self-demotion to change your own admin role." });
+    }
+    if (target.role === "admin" && req.body.role !== "admin" && await ensureNotLastAdmin(target, res, "demote")) return;
     const user = await User.findByIdAndUpdate(req.params.id, { role: req.body.role }, { new: true }).select(safeUserFields);
-    if (!user) return res.status(404).json({ success: false, message: "User not found" });
     res.json({ success: true, data: user });
   } catch (error) { res.status(500).json({ success: false, message: error.message }); }
 };
@@ -44,8 +157,10 @@ exports.updateUserRole = async (req, res) => {
 exports.deleteUser = async (req, res) => {
   try {
     if (isSelf(req)) return res.status(400).json({ success: false, message: "You cannot delete your own admin account." });
+    const target = await User.findById(req.params.id).select(safeUserFields);
+    if (!target) return res.status(404).json({ success: false, message: "User not found" });
+    if (await ensureNotLastAdmin(target, res, "delete")) return;
     const user = await User.findByIdAndDelete(req.params.id);
-    if (!user) return res.status(404).json({ success: false, message: "User not found" });
     res.json({ success: true, message: "User deleted" });
   } catch (error) { res.status(500).json({ success: false, message: error.message }); }
 };

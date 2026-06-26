@@ -26,8 +26,8 @@ const registerRules = [
     .withMessage("Password must be at least 8 characters"),
   body("role")
     .optional()
-    .isIn(["candidate", "recruiter", "admin"])
-    .withMessage("Role must be candidate, recruiter or admin"),
+    .isIn(["candidate", "recruiter"])
+    .withMessage("Role must be candidate or recruiter"),
   handleValidation,
 ];
 
@@ -123,6 +123,32 @@ const updateRoleRules = [
   body("role")
     .isIn(["candidate", "recruiter", "admin"])
     .withMessage("Invalid role"),
+  body("confirm")
+    .optional()
+    .isBoolean()
+    .withMessage("Confirm must be a boolean"),
+  handleValidation,
+];
+
+const adminBootstrapRules = [
+  body("name").trim().notEmpty().withMessage("Name is required").isLength({ max: 100 }),
+  body("email").trim().isEmail().withMessage("Valid email is required").normalizeEmail(),
+  body("password")
+    .isLength({ min: 8 })
+    .withMessage("Password must be at least 8 characters"),
+  body("code").trim().notEmpty().withMessage("Code is required"),
+  handleValidation,
+];
+
+const adminCreateUserRules = [
+  body("name").trim().notEmpty().withMessage("Name is required").isLength({ max: 100 }),
+  body("email").trim().isEmail().withMessage("Valid email is required").normalizeEmail(),
+  body("password")
+    .isLength({ min: 8 })
+    .withMessage("Password must be at least 8 characters"),
+  body("role")
+    .isIn(["candidate", "recruiter", "admin"])
+    .withMessage("Invalid role"),
   handleValidation,
 ];
 
@@ -141,6 +167,8 @@ module.exports = {
   updateStatusRules,
   profileRules,
   updateRoleRules,
+  adminBootstrapRules,
+  adminCreateUserRules,
   mongoIdParam,
   handleValidation,
 };
