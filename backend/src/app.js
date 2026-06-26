@@ -1,11 +1,13 @@
 const express = require("express");
 const cors = require("cors");
+const helmet = require("helmet");
 const path = require("path");
 const corsOptions = require("./config/cors");
 const { errorHandler } = require("./middlewares/error.middleware");
 
 const app = express();
 
+app.use(helmet());
 app.use(cors(corsOptions));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
@@ -18,6 +20,7 @@ app.use("/api/applications", require("./routes/application.routes"));
 app.use("/api/saved-jobs", require("./routes/saved-job.routes"));
 app.use("/api/notifications", require("./routes/notification.routes"));
 app.use("/api/chat", require("./routes/chat.routes"));
+app.use("/api/ai", require("./routes/ai.routes"));
 app.use("/api/recruiter/notes", require("./routes/recruiter-note.routes"));
 app.use("/api/recruiter/company", require("./routes/company.routes"));
 app.use("/api/admin", require("./routes/admin.routes"));

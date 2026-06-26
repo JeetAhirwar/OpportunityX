@@ -64,6 +64,23 @@ exports.markRead = async (req, res) => {
   }
 };
 
+exports.uploadAttachment = async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, message: "Attachment is required" });
+    res.json({
+      success: true,
+      attachment: {
+        url: `/uploads/chat/${req.file.filename}`,
+        name: req.file.originalname,
+        mimeType: req.file.mimetype,
+        size: req.file.size,
+      },
+    });
+  } catch (error) {
+    fail(res, error);
+  }
+};
+
 exports.editMessage = async (req, res) => {
   try {
     const message = await Message.findOne({

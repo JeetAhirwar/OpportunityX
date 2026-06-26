@@ -11,6 +11,13 @@
 > Verification approval/rejection records reviewer metadata and emits recruiter
 > notifications. Reports are explicitly Coming Soon pending an export pipeline.
 
+> Phase 6 update (June 25, 2026): chat and notifications now use real
+> OpportunityX APIs, MongoDB models, Socket.IO JWT auth, application-bound
+> conversation permissions, unread badges, typing, seen state, edit/delete,
+> reactions, local chat attachments, and real-time `notification_received`
+> events. Remaining Phase 6 work is focused on durable attachment storage and
+> multi-user/socket integration tests.
+
 **Assessment date:** June 22, 2026  
 **Assessment type:** Static repository audit plus build, lint, and existing test execution  
 **Repository scope:** `frontend`, `backend`, root configuration, environment examples, and project documentation
@@ -102,7 +109,7 @@ The production build emits a large JavaScript chunk warning: approximately
 | Saved Jobs | `/candidate/saved` | Candidate | Static Dummy | No | Backend API exists but page uses `mockSaved` and local deletion |
 | Job Alerts | `/candidate/alerts` | Candidate | Static Dummy | No | Local state only; no model/API |
 | AI Recommendations | `/candidate/recommendations` | Candidate | Static Dummy | No | Hard-coded recommendations and non-functional Apply buttons |
-| Messages | `/candidate/chat` | Candidate | Integrated, Partial UI | Yes | Real chat core; advanced controls and attachments are missing |
+| Messages | `/candidate/chat` | Candidate | Integrated | Yes | Real chat with pagination, attachments, edit/delete, reactions, typing, seen state, and unread counts |
 | Notifications | `/candidate/notifications` | Candidate | Working, needs verification | Yes | Real notifications/read state; no pagination or robust error UI |
 | Settings | `/candidate/settings` | Candidate | Mostly Dummy | No | Theme works; password, preferences, and delete account are not persisted |
 | Onboarding Modal | Modal in candidate shell | Candidate | Partial/Working | Yes | Profile save and redirect implemented; preferences are collected but never persisted |
@@ -125,14 +132,14 @@ The production build emits a large JavaScript chunk warning: approximately
 
 | Page | Route | Access | Status | Backend connected | Main issue / next fix |
 |---|---|---|---|---|---|
-| Dashboard | `/admin/dashboard` | Admin | Static Dummy | No | Summary metrics are hard-coded |
-| Users | `/admin/users` | Admin | Static Dummy | No | Real admin user APIs exist, but UI uses `mockUsers` |
-| Recruiter Approvals | `/admin/approvals` | Admin | Static Dummy / backend missing | No | Local mock requests; no recruiter approval model/API |
-| Job Moderation | `/admin/jobs` | Admin | Static Dummy | No | Moderation API exists, but UI uses `mockJobs` |
-| Applications | Not defined | Admin | Missing | No | No page or admin application route |
-| Analytics | `/admin/analytics` | Admin | Static Dummy | No | Backend analytics exists, but UI charts are hard-coded |
-| Notifications | `/admin/notifications` | Admin | Partial | Yes | Generic notifications page exists; admin-specific notification use cases are undefined |
-| Reports | Not defined | Admin | Missing/Partial backend | No | Report model and generator exist; no controller, route, or page |
+| Dashboard | `/admin/dashboard` | Admin | Integrated | Yes | Uses real admin analytics totals and recent records |
+| Users | `/admin/users` | Admin | Integrated | Yes | Real users, filters, role changes, status changes, deletion, and self-protection |
+| Recruiter Approvals | `/admin/approvals` | Admin | Integrated | Yes | Company verification approval/rejection with metadata and notifications |
+| Job Moderation | `/admin/jobs` | Admin | Integrated | Yes | Real jobs with status moderation |
+| Applications | `/admin/applications` | Admin | Integrated | Yes | Read-only populated all-application list |
+| Analytics | `/admin/analytics` | Admin | Integrated | Yes | Real grouped user/job/application/approval metrics |
+| Notifications | `/admin/notifications` | Admin | Integrated | Yes | Generic notifications page with real unread badge |
+| Reports | `/admin/reports` | Admin | Coming Soon | Partial | Fake downloads removed until export pipeline is implemented |
 | Settings | `/admin/settings` | Admin | Mostly Dummy | No | Password/preferences/delete account are not connected |
 
 ## API Status Matrix
@@ -188,7 +195,7 @@ inspection. Only the health endpoint has dedicated backend test coverage.
 | PATCH | `/api/admin/jobs/:id/moderate` | `moderateJob` | Admin | Working backend | UI is dummy; accepted status is not explicitly validated |
 | GET | `/api/admin/analytics` | `getAnalytics` | Admin | Working backend | UI is static |
 | GET | `/api/public/profile/:username` | `getPublicProfile` | Public | Working backend | Frontend calls a different route and uses fake fallback |
-| POST | `/api/upload` | Missing | Auth | Missing | Chat attachment UI disabled; no general upload route |
+| POST | `/api/chat/upload` | Working | Auth | Implemented | Accepts image, PDF, DOC, and DOCX chat attachments into local `/uploads/chat` storage |
 | AI APIs | Missing | Missing | — | Missing | No recommendation, parsing, skill-gap, or resume-analysis API |
 | Company APIs | Missing | Missing | Recruiter | Missing | Company Profile cannot persist |
 | Settings APIs | Missing | Missing | Auth | Missing | Password, preferences, account deletion are not implemented |
@@ -374,39 +381,33 @@ read/mark-all APIs.
 | Typing Indicator | Integrated | Shows text indicator | Access checked | Start/stop events | No multi-user test |
 | Seen Status | Partial | Marks conversations read but does not show receipts | Updates `readBy` and status | Emits `message_seen` | UI does not consume/display seen state |
 | Edit Message | Backend integrated | No edit control | Sender/access checks | Edit events | UI listener exists, initiator UI missing |
-| Delete Message | Backend integrated | No delete control | Sender/access checks | Delete event | UI removes event results, initiator UI missing |
-| Reactions | Backend integrated | No reaction control/listener | Participant checks and persistence | Reaction event | Frontend not exposed |
+| Delete Message | Integrated | Sender delete control | Sender/access checks | Delete event | UI removes deleted messages |
+| Reactions | Integrated | Reaction control/listener | Participant checks and persistence | Reaction event | Frontend updates reaction counts |
 | Unread Count | Integrated | Conversation and navbar badges | Map-based counters | Conversation updates | Needs concurrency testing |
 | Navbar Message Icon | Integrated | Correct role route and badge | Uses conversation data | Live updates | Authenticated mobile navigation is incomplete |
-| Notification Badge | Integrated core | Navbar and page connected | Notification persistence/read APIs | Live creation event | Application-submitted event is not pushed live |
+| Notification Badge | Integrated | Navbar and page connected | Notification persistence/read APIs | Live creation and received events | Needs pagination refinement |
 | Candidate-Recruiter Access Rule | Integrated | Start actions use application ID | Application/job owner enforced | Room/action access enforced | Needs negative authorization tests |
 
 ### Missing chat pieces
 
-1. No attachment upload endpoint or storage provider; paperclip is disabled.
-2. No frontend edit/delete/reaction controls.
-3. No visible delivered/seen receipts even though backend state exists.
-4. No message pagination/infinite-scroll UI; first page only.
-5. No socket reconnection/error status in the UI.
-6. No chat integration or authorization test suite.
-7. No notification deduplication or preferences enforcement.
-8. No durable object storage for files.
-9. No rate limiting/spam controls specifically for socket messages.
-10. Some chat UI text still contains corrupted encoding characters.
+1. No durable object storage for chat attachments; files currently use local
+   `/uploads/chat` storage.
+2. No socket connection/reconnection status indicator in the UI.
+3. No chat integration or authorization test suite.
+4. No notification preferences enforcement.
+5. No rate limiting/spam controls specifically for socket messages.
+6. Some older non-chat UI text still contains corrupted encoding characters.
 
 ### Recommended chat integration steps
 
 Because the core merge already exists, Phase 6 should now focus on completion
 and verification rather than starting the integration again:
 
-1. Add frontend edit/delete/reaction menus while preserving the current design.
-2. Display delivered/seen state and consume `message_seen`.
-3. Add authenticated attachment upload with durable storage and file
-   validation.
-4. Add history pagination and scroll restoration.
-5. Add socket connection/reconnection UI and event deduplication.
-6. Add two-user integration tests for candidate/recruiter messaging.
-7. Add negative tests for random users, other recruiters, and admin access.
+1. Move local chat uploads to durable object storage.
+2. Add socket connection/reconnection UI.
+3. Add two-user integration tests for candidate/recruiter messaging.
+4. Add negative tests for random users, other recruiters, and admin access.
+5. Add notification pagination and preferences.
 8. Test unread counts with multiple tabs and reconnects.
 9. Apply notification preferences when those settings are implemented.
 10. Remove remaining encoding corruption.
@@ -644,14 +645,15 @@ and verification rather than starting the integration again:
 - **Add conversation/message models:** Completed.
 - **Add chat routes:** Completed.
 - **Add Socket.IO server:** Completed.
-- **Connect current Messages UI:** Core completed.
+- **Connect current Messages UI:** Completed with real conversations,
+  pagination, attachments, typing, seen state, edit/delete, and reactions.
 - **Connect navbar message badge:** Completed.
-- **Connect notification badge:** Core completed.
+- **Connect notification badge:** Completed with real-time socket updates.
 - **Enforce candidate-recruiter permission rules:** Completed by inspection.
-- Complete edit/delete/reaction/seen controls in the existing UI.
-- Add attachment uploads and durable storage.
+- **Add attachment uploads:** Completed with local `/uploads/chat` storage.
 - Add socket/chat authorization and multi-user integration tests.
-- Add notification preferences, pagination, and reliable reconnect behavior.
+- Add notification preferences, pagination refinements, durable attachment
+  storage, and reliable reconnect test coverage.
 
 ### Phase 7: AI/advanced features
 

@@ -27,6 +27,8 @@ module.exports = Object.freeze({
     pass: process.env.SMTP_PASS || "",
   }),
   emailFrom: process.env.EMAIL_FROM || "OpportunityX <no-reply@opportunityx.local>",
+  openaiApiKey: /^replace_/i.test(process.env.OPENAI_API_KEY || "") ? "" : process.env.OPENAI_API_KEY || "",
+  aiModel: process.env.AI_MODEL || "gpt-4.1-mini",
   socketCorsOrigins: (process.env.SOCKET_CORS_ORIGIN || process.env.CORS_ORIGIN || "http://localhost:8080")
     .split(",")
     .map((origin) => origin.trim())

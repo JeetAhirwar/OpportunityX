@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { AlertCircle, Loader2, MessageSquare, User } from "lucide-react";
+import { AlertCircle, Brain, Loader2, MessageSquare, User } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import EmptyState from "@/components/common/EmptyState";
 import api from "@/services/api";
 import { startConversation } from "@/features/chat/messageApi";
 import { useChat } from "@/features/chat/ChatContext";
+import { getApplicationMatchScore, type MatchScore } from "@/features/ai/aiApi";
 
 interface Applicant {
   _id: string;
@@ -75,6 +76,8 @@ const ApplicantManagement = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
+  const [match, setMatch] = useState<{ applicant: Applicant; score: MatchScore } | null>(null);
+  const [matchingId, setMatchingId] = useState("");
 
   useEffect(() => {
     setLoading(true);
@@ -113,6 +116,17 @@ const ApplicantManagement = () => {
       navigate(`/recruiter/chat?conversation=${response.conversation._id}`);
     } catch (requestError) {
       toast({ title: "Could not start conversation", description: requestError instanceof Error ? requestError.message : "Unknown error", variant: "destructive" });
+    }
+  };
+
+  const loadMatch = async (applicant: Applicant) => {
+    setMatchingId(applicant._id);
+    try {
+      setMatch({ applicant, score: await getApplicationMatchScore(applicant._id) });
+    } catch (requestError) {
+      toast({ title: "AI match unavailable", description: requestError instanceof Error ? requestError.message : "Unknown error", variant: "destructive" });
+    } finally {
+      setMatchingId("");
     }
   };
 
@@ -181,6 +195,9 @@ const ApplicantManagement = () => {
                     <Button variant="outline" size="sm" onClick={() => void messageCandidate(applicant._id)} title="Message candidate">
                       <MessageSquare className="h-4 w-4" />
                     </Button>
+                    <Button variant="outline" size="sm" onClick={() => void loadMatch(applicant)} disabled={matchingId === applicant._id} title="AI match">
+                      {matchingId === applicant._id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
+                    </Button>
                   </div>
                 </div>
               </CardContent>
@@ -188,6 +205,21 @@ const ApplicantManagement = () => {
           ))}
         </div>
       )}
+      {match && <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 p-4" onClick={() => setMatch(null)}>
+        <Card className="w-full max-w-lg" onClick={(event) => event.stopPropagation()}>
+          <CardContent className="space-y-4 p-5">
+            <div><p className="text-sm text-muted-foreground">AI advisory match</p><h3 className="font-display text-xl font-bold">{match.applicant.candidate.name}: {match.score.score}/100</h3></div>
+            <p className="text-sm text-muted-foreground">{match.score.explanation}</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div><p className="text-sm font-medium">Matched skills</p><p className="text-sm text-muted-foreground">{match.score.matchedSkills?.join(", ") || "None listed"}</p></div>
+              <div><p className="text-sm font-medium">Missing skills</p><p className="text-sm text-muted-foreground">{match.score.missingSkills?.join(", ") || "None listed"}</p></div>
+            </div>
+            {!!match.score.riskFlags?.length && <div><p className="text-sm font-medium">Risk flags</p><ul className="list-disc pl-5 text-sm text-muted-foreground">{match.score.riskFlags.map((item) => <li key={item}>{item}</li>)}</ul></div>}
+            <p className="rounded-lg bg-warning/10 p-3 text-xs text-warning">AI match scores are suggestions only. Do not auto-reject candidates based on this score.</p>
+            <Button className="w-full" variant="outline" onClick={() => setMatch(null)}>Close</Button>
+          </CardContent>
+        </Card>
+      </div>}
     </motion.div>
   );
 };

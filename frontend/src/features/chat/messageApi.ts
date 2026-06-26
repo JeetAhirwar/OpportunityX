@@ -23,6 +23,12 @@ export interface ChatMessage {
   conversation: string;
   sender: ChatUser | string;
   content: string;
+  attachments?: {
+    url: string;
+    name: string;
+    mimeType: string;
+    size: number;
+  }[];
   status: "sent" | "delivered" | "seen";
   reactions: { user: string; emoji: string }[];
   editedAt?: string | null;
@@ -38,7 +44,22 @@ export const startConversation = (applicationId: string) =>
   });
 
 export const getMessages = (conversationId: string) =>
-  api.get<{ success: true; messages: ChatMessage[] }>(`/chat/messages/${conversationId}`);
+  api.get<{ success: true; messages: ChatMessage[]; page: number; hasMore: boolean }>(`/chat/messages/${conversationId}`);
+
+export const getOlderMessages = (conversationId: string, page: number) =>
+  api.get<{ success: true; messages: ChatMessage[]; page: number; hasMore: boolean }>(`/chat/messages/${conversationId}?page=${page}`);
 
 export const markConversationRead = (conversationId: string) =>
   api.patch(`/chat/conversations/${conversationId}/read`);
+
+export const editMessage = (messageId: string, content: string) =>
+  api.patch<{ success: true; message: ChatMessage }>(`/chat/messages/${messageId}`, { content });
+
+export const deleteMessage = (messageId: string) =>
+  api.delete<{ success: true }>(`/chat/messages/${messageId}`);
+
+export const uploadChatAttachment = (file: File) => {
+  const formData = new FormData();
+  formData.append("attachment", file);
+  return api.upload<{ success: true; attachment: NonNullable<ChatMessage["attachments"]>[number] }>("/chat/upload", formData);
+};

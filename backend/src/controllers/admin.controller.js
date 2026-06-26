@@ -74,7 +74,9 @@ const notifyRecruiter = async (req, company, approved, reason = "") => {
     type: approved ? "success" : "error",
     link: "/recruiter/company",
   });
-  req.app.get("io")?.to(String(company.recruiter)).emit("notification_created", notification);
+  const io = req.app.get("io");
+  io?.to(String(company.recruiter)).emit("notification_created", notification);
+  io?.to(String(company.recruiter)).emit("notification_received", notification);
 };
 
 exports.approveRecruiter = async (req, res) => {

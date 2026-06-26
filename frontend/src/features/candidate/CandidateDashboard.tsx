@@ -16,6 +16,7 @@ import ResumeUpload from "@/features/candidate/ResumeUpload";
 import SavedJobs from "@/features/candidate/SavedJobs";
 import MyApplications from "@/features/candidate/MyApplications";
 import JobRecommendations from "@/features/candidate/JobRecommendations";
+import CandidateAIAssistant from "@/features/ai/CandidateAIAssistant";
 import JobAlerts from "@/features/candidate/JobAlerts";
 import ChatPage from "@/features/chat/ChatPage";
 import NotificationsPage from "@/features/notifications/NotificationsPage";
@@ -35,6 +36,7 @@ const sidebarLinks = [
   { label: "Saved Jobs", href: "/candidate/saved", icon: Bookmark },
   { label: "Job Alerts", href: "/candidate/alerts", icon: Bell },
   { label: "AI Recommendations", href: "/candidate/recommendations", icon: Brain },
+  { label: "AI Assistant", href: "/candidate/ai-assistant", icon: Brain },
   { label: "Messages", href: "/candidate/chat", icon: MessageSquare },
   { label: "Notifications", href: "/candidate/notifications", icon: Bell },
   { label: "Settings", href: "/candidate/settings", icon: Settings },
@@ -225,6 +227,7 @@ const CandidateDashboard = () =>
                 <Route path="saved" element={<SavedJobs />} />
                 <Route path="alerts" element={<JobAlerts />} />
                 <Route path="recommendations" element={<JobRecommendations />} />
+                <Route path="ai-assistant" element={<CandidateAIAssistant />} />
                 <Route path="chat" element={<ChatPage />} />
                 <Route path="notifications" element={<NotificationsPage />} />
                 <Route path="settings" element={<SettingsPage />} />

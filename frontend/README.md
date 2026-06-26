@@ -37,4 +37,6 @@ VITE_APP_NAME=OpportunityX
 ```
 
 Only `VITE_` values are exposed to browser code, so they must never contain
-secrets. Production should point `VITE_API_BASE_URL` at the deployed backend.
+secrets. Production should point `VITE_API_BASE_URL` and `VITE_SOCKET_URL` at
+the deployed backend. AI features do not require frontend secrets; all provider
+calls go through backend `/api/ai` routes.

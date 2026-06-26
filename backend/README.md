@@ -27,7 +27,9 @@ Copy `.env.example` to `.env`. Required runtime values are `MONGODB_URI` and
 remains accepted temporarily for compatibility with older local files.
 
 The API defaults to port `8000`. Allowed browser origins are configured as a
-comma-separated `CORS_ORIGIN` list.
+comma-separated `CORS_ORIGIN` list. Optional `OPENAI_API_KEY` and `AI_MODEL`
+enable `/api/ai` features; missing AI credentials produce unavailable
+responses instead of fake output.
 
 ## API summary
 
@@ -44,3 +46,7 @@ comma-separated `CORS_ORIGIN` list.
 
 Detailed access requirements are in
 [`docs/api-documentation.md`](../docs/api-documentation.md).
+
+Security middleware includes Helmet, exact-origin CORS, JWT route protection,
+role authorization, upload validation, and in-memory rate limiting for AI/chat
+routes. Replace the limiter with a distributed store before horizontal scaling.

@@ -21,6 +21,20 @@ token. Conversation creation requires an `applicationId`; the backend derives
 the candidate, recruiter, and job from that application and rejects unrelated
 users and administrators.
 
+- `GET /api/chat/conversations` returns the authenticated user's conversations
+  with unread counts.
+- `POST /api/chat/conversations/start` starts or returns the application-bound
+  candidate/recruiter conversation.
+- `GET /api/chat/messages/:conversationId?page=1&limit=50` returns paginated
+  messages in chronological order and includes `hasMore`.
+- `POST /api/chat/upload` accepts one multipart `attachment` field for images,
+  PDFs, DOC, or DOCX files up to 10 MB.
+- `PATCH /api/chat/conversations/:conversationId/read` marks a conversation
+  read for the current user.
+- `PATCH /api/chat/messages/:messageId` edits only the sender's own message.
+- `DELETE /api/chat/messages/:messageId` soft-deletes only the sender's own
+  message.
+
 Socket.IO connects to the OpportunityX backend using:
 
 ```js
@@ -30,6 +44,45 @@ io(VITE_SOCKET_URL, { auth: { token } });
 The merged server supports conversation rooms, personal user rooms, messages,
 typing, reactions, edit/delete, seen state, online users, unread counts, and
 notification events.
+
+Socket events implemented:
+
+- Client to server: `join_conversation`, `send_message`, `message_seen`,
+  `message_reaction`, `edit_message`, `delete_message`, `typing_start`,
+  `typing_stop`, `mark_conversation_read`.
+- Server to client: `online_users`, `receive_message`, `message_sent`,
+  `conversations_updated`, `message_seen`, `message_reaction_updated`,
+  `message_updated`, `message_edited`, `message_deleted`, `typing_start`,
+  `typing_stop`, `message_action_error`, `notification_created`,
+  `notification_received`.
+
+## Notifications
+
+- `GET /api/notifications` returns the current user's notifications. Responses
+  include `recipient` for the Phase 6 contract and `user` for compatibility.
+- `PATCH /api/notifications/:id/read` marks one notification read.
+- `PATCH /api/notifications/read-all` marks all current-user notifications
+  read.
+- Notifications are created for new applications, candidate application status
+  updates, recruiter verification approval/rejection, and new messages.
+
+## AI
+
+All AI endpoints require authentication, role authorization, and backend-only
+provider calls. If `OPENAI_API_KEY` is not configured, endpoints return an
+unavailable response instead of generated placeholder content.
+
+- `POST /api/ai/career-assistant` candidate-only career Q&A.
+- `POST /api/ai/resume-analyze` candidate-only resume/profile analysis.
+- `GET /api/ai/job-recommendations` candidate-only job recommendations.
+- `POST /api/ai/recruiter/job-description` recruiter-only job description
+  preview.
+- `POST /api/ai/recruiter/interview-questions` recruiter-only screening
+  questions.
+- `POST /api/ai/recruiter/candidate-summary` recruiter-only candidate summary.
+- `GET /api/ai/recruiter/applications/:applicationId/match-score`
+  recruiter-only advisory scoring for owned applicants.
+- `GET /api/ai/admin/insights` admin-only aggregate insight generation.
 
 ## Candidate
 

@@ -9,6 +9,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { useToast } from "@/hooks/use-toast";
 import api, { publicAssetUrl } from "@/services/api";
 import type { Profile } from "@/types";
+import { analyzeResume, type ResumeAnalysis } from "@/features/ai/aiApi";
 
 const appendProfile = (formData: FormData, profile: Profile) => {
   formData.append("name", profile.name);
@@ -34,6 +35,8 @@ const ResumeUpload = () => {
   const { data: profile, isLoading, isError, error, refetch } = useProfile();
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysis, setAnalysis] = useState<ResumeAnalysis | null>(null);
 
   const handleUpload = async (file: File) => {
     if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
@@ -56,6 +59,22 @@ const ResumeUpload = () => {
       toast({ title: "Resume upload failed", description: requestError instanceof Error ? requestError.message : "Unknown error", variant: "destructive" });
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleAnalyze = async () => {
+    if (!profile?.resumeUrl) {
+      toast({ title: "Resume required", description: "Upload your resume before requesting AI analysis.", variant: "destructive" });
+      return;
+    }
+    setAnalyzing(true);
+    setAnalysis(null);
+    try {
+      setAnalysis(await analyzeResume());
+    } catch (requestError) {
+      toast({ title: "AI analysis unavailable", description: requestError instanceof Error ? requestError.message : "Unknown error", variant: "destructive" });
+    } finally {
+      setAnalyzing(false);
     }
   };
 
@@ -84,15 +103,32 @@ const ResumeUpload = () => {
             <>
               <FileUpload accept=".pdf,application/pdf" maxSize={10} onFileSelect={(file) => void handleUpload(file)} currentFile={currentFile} label="Drop your PDF resume here" />
               {uploading && <p className="mt-3 flex items-center text-sm text-muted-foreground"><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Uploading resume...</p>}
-              {profile?.resumeUrl && <Button variant="outline" size="sm" className="mt-4" asChild><a href={resumeHref(profile.resumeUrl)} target="_blank" rel="noopener noreferrer"><ExternalLink className="mr-2 h-4 w-4" /> View Current Resume</a></Button>}
+              {profile?.resumeUrl && <div className="mt-4 flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" asChild><a href={resumeHref(profile.resumeUrl)} target="_blank" rel="noopener noreferrer"><ExternalLink className="mr-2 h-4 w-4" /> View Current Resume</a></Button>
+                <Button size="sm" onClick={() => void handleAnalyze()} disabled={analyzing} className="gradient-primary border-0">{analyzing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />} Analyze Resume</Button>
+              </div>}
             </>
           )}
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><Sparkles className="h-5 w-5 text-accent" /> AI Resume Parsing</CardTitle></CardHeader>
-        <CardContent><p className="text-sm text-muted-foreground">Automatic resume parsing is coming soon. Your uploaded PDF is stored with your candidate profile.</p></CardContent>
+        <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><Sparkles className="h-5 w-5 text-accent" /> AI Resume Analysis</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          {!analysis ? <p className="text-sm text-muted-foreground">AI analysis uses your profile and uploaded resume metadata. PDF text extraction is still pending, so the result will call out that limitation.</p> : (
+            <div className="space-y-4 text-sm">
+              <div><p className="font-medium">Resume Score</p><p className="text-2xl font-bold text-primary">{analysis.resumeScore}/100</p></div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div><p className="font-medium">Strengths</p><ul className="mt-1 list-disc space-y-1 pl-5 text-muted-foreground">{analysis.strengths?.map((item) => <li key={item}>{item}</li>)}</ul></div>
+                <div><p className="font-medium">Improvements</p><ul className="mt-1 list-disc space-y-1 pl-5 text-muted-foreground">{analysis.weaknesses?.map((item) => <li key={item}>{item}</li>)}</ul></div>
+                <div><p className="font-medium">Missing Skills</p><p className="mt-1 text-muted-foreground">{analysis.missingSkills?.join(", ") || "None listed"}</p></div>
+                <div><p className="font-medium">ATS Suggestions</p><ul className="mt-1 list-disc space-y-1 pl-5 text-muted-foreground">{analysis.atsSuggestions?.map((item) => <li key={item}>{item}</li>)}</ul></div>
+              </div>
+              {analysis.improvedSummary && <div><p className="font-medium">Improved Summary</p><p className="mt-1 text-muted-foreground">{analysis.improvedSummary}</p></div>}
+              {!!analysis.limitations?.length && <p className="rounded-lg bg-warning/10 p-3 text-xs text-warning">{analysis.limitations.join(" ")}</p>}
+            </div>
+          )}
+        </CardContent>
       </Card>
     </motion.div>
   );

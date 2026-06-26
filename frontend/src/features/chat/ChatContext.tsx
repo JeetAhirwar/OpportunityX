@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/store/AuthContext";
 import api from "@/services/api";
 import { getConversations, type Conversation } from "./messageApi";
@@ -20,6 +20,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const receivedNotificationIds = useRef(new Set<string>());
 
   const reloadConversations = useCallback(async () => {
     if (!isAuthenticated || user?.role === "admin") return;
@@ -41,20 +42,27 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
     void reloadNotifications();
-    if (user?.role === "admin") return;
-    void reloadConversations();
+    if (user?.role !== "admin") void reloadConversations();
 
     const socket = getChatSocket();
     const onConversations = (items: Conversation[]) => setConversations(items);
-    const onNotification = () => setUnreadNotifications((count) => count + 1);
-    socket.on("conversations_updated", onConversations);
+    const onNotification = (notification?: { _id?: string }) => {
+      if (notification?._id) {
+        if (receivedNotificationIds.current.has(notification._id)) return;
+        receivedNotificationIds.current.add(notification._id);
+      }
+      setUnreadNotifications((count) => count + 1);
+    };
+    if (user?.role !== "admin") socket.on("conversations_updated", onConversations);
     socket.on("online_users", setOnlineUsers);
     socket.on("notification_created", onNotification);
+    socket.on("notification_received", onNotification);
     socket.connect();
     return () => {
       socket.off("conversations_updated", onConversations);
       socket.off("online_users", setOnlineUsers);
       socket.off("notification_created", onNotification);
+      socket.off("notification_received", onNotification);
     };
   }, [isAuthenticated, reloadConversations, reloadNotifications, user?.role]);
 

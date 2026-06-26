@@ -1,5 +1,39 @@
 # Development Changelog
 
+## 2026-06-25 Phase 7 and 8
+
+- Added backend AI service/provider abstraction with backend-only
+  `OPENAI_API_KEY`, configurable `AI_MODEL`, prompt sanitization, and clean
+  unavailable responses when AI is not configured.
+- Added role-protected AI endpoints for candidate career assistant, resume
+  analysis, job recommendations, recruiter job description helpers, recruiter
+  match scoring, and admin insights.
+- Connected candidate AI assistant, resume analysis, AI recommendations,
+  recruiter job description previews, recruiter AI match scoring, and admin AI
+  insights without redesigning existing screens.
+- Replaced the no-op rate limiter with an in-memory limiter and applied it to
+  AI and chat routes.
+- Added Helmet security headers, CI workflow, AI architecture docs, testing
+  guide, security checklist, smoke checklist, and backend tests for AI fallback
+  and rate limiting.
+
+## 2026-06-25
+
+- Completed the remaining Phase 6 chat and notification integration work.
+- Added authenticated chat attachment upload support for images, PDFs, DOC,
+  and DOCX files using the existing `/uploads` static serving path.
+- Connected the existing chat UI to attachment send/display, older-message
+  pagination, message edit/delete actions, reactions, and seen status labels.
+- Added `notification_received` socket emission alongside the existing
+  `notification_created` event for backward-compatible real-time notification
+  delivery.
+- Connected recruiter notifications for new candidate applications and emitted
+  real-time candidate notifications for application status changes.
+- Kept admin sockets connected for real-time notification badge updates while
+  preserving candidate/recruiter-only conversation loading.
+- Added notification API `recipient` compatibility in responses while retaining
+  the existing persisted `user` field.
+
 ## 2026-06-22
 
 - Completed Phase 5 admin flow integration.

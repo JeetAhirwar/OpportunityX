@@ -4,8 +4,12 @@ exports.getNotifications = async (req, res) => {
   try {
     const notifications = await Notification.find({ user: req.user._id })
       .sort({ createdAt: -1 })
-      .limit(50);
-    res.json(notifications);
+      .limit(50)
+      .lean();
+    res.json(notifications.map((notification) => ({
+      ...notification,
+      recipient: notification.user,
+    })));
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

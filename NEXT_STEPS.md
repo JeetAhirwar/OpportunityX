@@ -1,8 +1,12 @@
 # Next Steps
 
-- Phase 6: finish message edit/delete/reaction controls, attachment storage,
-  notification pagination/error states, and end-to-end socket authorization
-  tests.
+- Phase 6 follow-up: add notification pagination/error-state refinements and
+  end-to-end socket authorization tests.
+- Phase 7 follow-up: add durable resume text extraction, structured AI output
+  validation, AI audit logging, and integration tests for role authorization.
+- Phase 8 follow-up: remediate dependency audit findings, expand API
+  integration tests, and add browser E2E coverage for candidate/recruiter/admin
+  smoke paths.
 - Add a real admin reporting/export pipeline before enabling CSV downloads.
 - Define deletion/cascade or archival rules for users with jobs, applications,
   profiles, messages, and companies before production hard deletion.
@@ -24,12 +28,10 @@
 - Add refresh-token rotation and server-side session revocation. Phase 2 uses
   validated JWT access tokens and an authenticated no-op logout endpoint
   because no refresh/session model exists yet.
-- Configure durable object storage before enabling message attachments; the
-  current paperclip control remains disabled.
+- Move chat attachments from local `/uploads/chat` storage to durable object
+  storage before production deployment.
 - Add integration tests backed by a disposable MongoDB instance for
   candidate/recruiter authorization, unread counters, and socket events.
-- Add message edit/delete/reaction controls to the existing bubble UI. Backend
-  APIs and socket events are already available.
 - Consider route-level code splitting; the current production bundle triggers
   Vite's large-chunk warning.
 - Review existing dependency audit findings separately before production

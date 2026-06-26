@@ -2,7 +2,7 @@
 import { motion } from "framer-motion";
 import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Eye, Save, Send } from "lucide-react";
+import { ArrowLeft, ArrowRight, Eye, Loader2, Save, Send, Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import PageHeader from "@/components/common/PageHeader";
 import api from "@/services/api";
 import { getCompanyProfile, getRecruiterJob } from "@/features/recruiter/recruiterApi";
+import { generateJobDescription } from "@/features/ai/aiApi";
 
 const steps = ["Job Details", "Requirements", "Compensation", "Preview"];
 
@@ -26,6 +27,8 @@ const PostJob = () => {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(isEditing);
   const [saving, setSaving] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [aiPreview, setAiPreview] = useState<{ description: string; responsibilities: string; qualifications: string } | null>(null);
   const [verificationStatus, setVerificationStatus] = useState("unverified");
   const [form, setForm] = useState({
     title: "", company: "", location: "", type: "full-time", workMode: "remote",
@@ -112,6 +115,23 @@ const PostJob = () => {
   }
 };
 
+  const handleGenerateDescription = async () => {
+    setGenerating(true);
+    setAiPreview(null);
+    try {
+      setAiPreview(await generateJobDescription({
+        title: form.title,
+        skills: form.skills,
+        experience: form.experience,
+        workMode: form.workMode,
+      }));
+    } catch (requestError) {
+      toast({ title: "AI helper unavailable", description: requestError instanceof Error ? requestError.message : "Unknown error", variant: "destructive" });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   if (loading) return <div className="p-6 text-sm text-muted-foreground">Loading job...</div>;
 
   return (
@@ -165,7 +185,11 @@ const PostJob = () => {
                 </Select>
               </div>
             </div>
-            <div><Label>Description</Label><Textarea placeholder="Describe the role, team, and what makes this opportunity exciting..." value={form.description} onChange={(e) => update("description", e.target.value)} rows={5} /></div>
+            <div>
+              <div className="mb-1 flex items-center justify-between gap-2"><Label>Description</Label><Button type="button" variant="outline" size="sm" onClick={() => void handleGenerateDescription()} disabled={generating || !form.title.trim()}>{generating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />} Generate Description</Button></div>
+              <Textarea placeholder="Describe the role, team, and what makes this opportunity exciting..." value={form.description} onChange={(e) => update("description", e.target.value)} rows={5} />
+            </div>
+            {aiPreview && <Card className="border-primary/30"><CardContent className="space-y-3 p-4 text-sm"><p className="font-medium">AI suggestion preview</p><p className="text-muted-foreground whitespace-pre-line">{aiPreview.description}</p><div className="flex gap-2"><Button size="sm" variant="outline" onClick={() => update("description", aiPreview.description)}>Insert Description</Button><Button size="sm" variant="outline" onClick={() => { update("responsibilities", aiPreview.responsibilities); update("qualifications", aiPreview.qualifications); }}>Insert Requirements</Button></div></CardContent></Card>}
           </CardContent>
         </Card>
       )}

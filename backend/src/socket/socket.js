@@ -18,6 +18,10 @@ const removeOnline = (userId, socketId) => {
   sockets.delete(socketId);
   if (!sockets.size) onlineSockets.delete(userId);
 };
+const emitNotification = (io, userId, notification) => {
+  io.to(String(userId)).emit("notification_created", notification);
+  io.to(String(userId)).emit("notification_received", notification);
+};
 
 module.exports = (io) => {
   const emitConversations = async (userId) => {
@@ -58,7 +62,7 @@ module.exports = (io) => {
         const room = String(result.conversation._id);
         io.to([room, String(result.recipientId)]).emit("receive_message", result.message);
         socket.emit("message_sent", result.message);
-        io.to(String(result.recipientId)).emit("notification_created", result.notification);
+        emitNotification(io, result.recipientId, result.notification);
         await Promise.all([emitConversations(userId), emitConversations(result.recipientId)]);
       } catch (err) {
         error(socket, err.message);

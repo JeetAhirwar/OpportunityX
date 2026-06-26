@@ -3,6 +3,12 @@ const Job = require("../models/job.model");
 const Notification = require("../models/notification.model");
 const mongoose = require("mongoose");
 
+const emitNotification = (req, userId, notification) => {
+  const io = req.app.get("io");
+  io?.to(String(userId)).emit("notification_created", notification);
+  io?.to(String(userId)).emit("notification_received", notification);
+};
+
 // Apply to job
 exports.apply = async (req, res) => {
   try {
@@ -41,6 +47,14 @@ exports.apply = async (req, res) => {
       message: "Your application has been submitted successfully.",
       type: "success",
     });
+    const recruiterNotification = await Notification.create({
+      user: job.postedBy,
+      title: "New Application Received",
+      message: `${req.user.name} applied for ${job.title}.`,
+      type: "info",
+      link: "/recruiter/applicants",
+    });
+    emitNotification(req, job.postedBy, recruiterNotification);
 
     res.status(201).json(application);
   } catch (error) {
@@ -119,7 +133,7 @@ exports.updateStatus = async (req, res) => {
       message: `Your application for ${application.job?.title} has been ${req.body.status}.`,
       type: req.body.status === "rejected" ? "error" : "success",
     });
-    req.app.get("io")?.to(String(application.candidate)).emit("notification_created", notification);
+    emitNotification(req, application.candidate, notification);
 
     res.json(application);
   } catch (error) {

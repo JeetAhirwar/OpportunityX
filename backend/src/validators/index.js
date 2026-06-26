@@ -26,8 +26,8 @@ const registerRules = [
     .withMessage("Password must be at least 8 characters"),
   body("role")
     .optional()
-    .isIn(["candidate", "recruiter"])
-    .withMessage("Role must be candidate or recruiter"),
+    .isIn(["candidate", "recruiter", "admin"])
+    .withMessage("Role must be candidate, recruiter or admin"),
   handleValidation,
 ];
 
