@@ -66,6 +66,8 @@ AI endpoints are served from `/api/ai` and require role-based auth. Set provider
 
 The premium UI pass keeps real API integrations intact while improving shell branding, metadata, responsiveness, accessibility, route-level code splitting, and partial-data safety. See [FRONTEND_UI_AUDIT.md](FRONTEND_UI_AUDIT.md) for current findings and remaining UI QA.
 
+The latest design pass also removes fake homepage testimonials/statistics, strengthens the AI hiring platform narrative, upgrades featured job cards, and documents frontend improvements in [UI_IMPROVEMENTS.md](UI_IMPROVEMENTS.md).
+
 ## Root Commands
 
 | Command | Purpose |

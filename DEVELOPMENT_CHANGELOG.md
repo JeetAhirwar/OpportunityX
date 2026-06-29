@@ -2,6 +2,14 @@
 
 ## 2026-06-26
 
+- Redesigned the homepage into a stronger AI hiring intelligence landing
+  experience with a product preview, role-specific CTAs, public API-backed job
+  metrics, richer featured job cards, real workflow/capability sections, and no
+  fictional testimonials or fake match statistics.
+- Reorganized Settings into tabbed Security, Appearance, Notifications, and
+  Danger Zone sections using existing frontend primitives.
+- Added `UI_IMPROVEMENTS.md` documenting pages updated, components refined,
+  performance, accessibility, responsive notes, and known limitations.
 - Completed a frontend-only OpportunityX Premium UI/UX stabilization pass:
   added route-level code splitting, tightened production metadata, removed
   prominent broken shell links, improved navbar/footer accessibility, hardened

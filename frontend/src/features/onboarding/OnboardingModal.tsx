@@ -139,7 +139,7 @@ const handleFinish = async () => {
       formData.append("resume", resumeFile);
     }
 
-    await api.put("/api/candidate/profile", formData);
+    await api.put("/candidate/profile", formData);
 
     localStorage.setItem("ox_onboarding_complete", "true");
     onComplete();

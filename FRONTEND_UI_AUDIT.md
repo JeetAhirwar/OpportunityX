@@ -14,6 +14,7 @@ Audited the React/Vite frontend routes, shared shell, public job flow, auth surf
 - Recruiter dashboard recent applicant rows assumed nested `candidate` and `job` objects always exist.
 - Admin dashboard recent collections assumed all arrays were present in the analytics response.
 - Base metadata still used generic job portal copy and leftover TODO comments.
+- Homepage contained invented-looking statistics, fictional testimonials, and static AI match examples. These were replaced with public API job metrics, clearly labeled unavailable/private metrics, and real platform capability highlights.
 
 ## UI Consistency
 
@@ -68,3 +69,4 @@ Audited the React/Vite frontend routes, shared shell, public job flow, auth surf
 - Extract a shared role dashboard layout only after the current UI stabilizes.
 - Add a real Open Graph image asset when branding assets are available.
 - Continue converting text-only loading states to shared skeleton and empty-state components.
+- Expose safe public aggregate counts only if product wants public company/recruiter metrics on the homepage.

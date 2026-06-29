@@ -1,11 +1,13 @@
 const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
-export const apiUrl = (endpoint: string) => {
-  const base = (configuredBaseUrl || "").replace(/\/$/, "");
+export const createApiUrl = (baseUrl: string | undefined, endpoint: string) => {
+  const base = (baseUrl || "").replace(/\/$/, "");
   const path = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
-  return base.endsWith("/api") && path.startsWith("/api/")
-    ? `${base}${path.slice(4)}`
-    : `${base}${path}`;
+  return `${base}${path}`;
+};
+
+export const apiUrl = (endpoint: string) => {
+  return createApiUrl(configuredBaseUrl, endpoint);
 };
 
 export const publicAssetUrl = (assetPath: string) => {
@@ -116,14 +118,14 @@ class ApiClient {
   }
 
   async login(email: string, password: string) {
-    const data = await this.post<{ token: string; user: unknown }>("/api/auth/login", { email, password }, { skipAuth: true });
+    const data = await this.post<{ token: string; user: unknown }>("/auth/login", { email, password }, { skipAuth: true });
     localStorage.setItem("ox_token", data.token);
     localStorage.setItem("ox_user", JSON.stringify(data.user));
     return data;
   }
 
   async register(payload: { name: string; email: string; password: string; role: string }) {
-    const data = await this.post<{ token: string; user: unknown }>("/api/auth/register", payload, { skipAuth: true });
+    const data = await this.post<{ token: string; user: unknown }>("/auth/register", payload, { skipAuth: true });
     localStorage.setItem("ox_token", data.token);
     localStorage.setItem("ox_user", JSON.stringify(data.user));
     return data;

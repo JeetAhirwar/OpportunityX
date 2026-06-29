@@ -258,7 +258,7 @@ const ChatPage = () => {
                     </div>}
                     <div className={cn("mt-1 flex items-center gap-2 text-[10px]", mine ? "text-primary-foreground/70" : "text-muted-foreground")}>
                       <span>{format(new Date(message.createdAt), "p")}{message.editedAt ? " - edited" : ""}{mine ? ` - ${message.status}` : ""}</span>
-                      <button type="button" onClick={() => socket.emit("message_reaction", { messageId: message._id, emoji: "👍" })} className="rounded px-1 hover:bg-background/20">👍 {message.reactions?.length || ""}</button>
+                      <button type="button" onClick={() => socket.emit("message_reaction", { messageId: message._id, emoji: "+1" })} className="rounded px-1 hover:bg-background/20">+1 {message.reactions?.length || ""}</button>
                       {mine && editingId !== message._id && <>
                         <button type="button" onClick={() => { setEditingId(message._id); setEditInput(message.content); }} className="hover:text-foreground"><Edit3 className="h-3 w-3" /></button>
                         <button type="button" onClick={() => void removeMessage(message._id)} className="hover:text-foreground"><Trash2 className="h-3 w-3" /></button>
