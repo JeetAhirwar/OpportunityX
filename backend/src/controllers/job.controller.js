@@ -1,6 +1,8 @@
 ﻿const Job = require("../models/job.model");
 const mongoose = require("mongoose");
 const Company = require("../models/company.model");
+const emailService = require("../services/email.service");
+const { EMAIL_TYPES } = emailService;
 
 const listFilter = (value) =>
   String(value || "")
@@ -34,6 +36,14 @@ exports.createJob = async (req, res) =>
       ...req.body,
       postedBy: req.user._id,
     });
+    if (job.status === "active") {
+      emailService.send({
+        to: req.user.email,
+        type: EMAIL_TYPES.RECRUITER_JOB_PUBLISHED,
+        data: { name: req.user.name, jobTitle: job.title, companyName: job.company },
+        dedupeKey: `email-job-created:${job._id}:active`,
+      });
+    }
 
     res.status(201).json({
       success: true,
@@ -70,6 +80,14 @@ exports.updateJob = async (req, res) =>
       req.body,
       { new: true, runValidators: true }
     );
+    if (job.status === "active" && existing.status !== "active") {
+      emailService.send({
+        to: req.user.email,
+        type: EMAIL_TYPES.RECRUITER_JOB_PUBLISHED,
+        data: { name: req.user.name, jobTitle: job.title, companyName: job.company },
+        dedupeKey: `email-job-updated:${job._id}:active:${job.updatedAt?.getTime?.() || Date.now()}`,
+      });
+    }
 
     res.json({
       success: true,
@@ -104,6 +122,12 @@ exports.deleteJob = async (req, res) =>
         message: "Job not found",
       });
     }
+    emailService.send({
+      to: req.user.email,
+      type: status === "closed" ? EMAIL_TYPES.RECRUITER_JOB_EXPIRED : EMAIL_TYPES.RECRUITER_JOB_PUBLISHED,
+      data: { name: req.user.name, jobTitle: job.title, companyName: job.company },
+      dedupeKey: `email-job-status:${job._id}:${status}:${job.updatedAt?.getTime?.() || Date.now()}`,
+    });
 
     res.json({
       success: true,

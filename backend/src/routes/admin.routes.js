@@ -7,6 +7,11 @@ const {
   getRecruiters, getRecruiter, approveRecruiter, rejectRecruiter,
   getJobs, moderateJob, getApplications, getAnalytics,
 } = require("../controllers/admin.controller");
+const {
+  listEmailTemplates,
+  previewEmailTemplate,
+  validateEmailTemplates,
+} = require("../controllers/email-preview.controller");
 
 router.post("/bootstrap", adminBootstrapRules, bootstrapAdmin);
 
@@ -25,6 +30,9 @@ router.get("/jobs", getJobs);
 router.patch("/jobs/:id/moderate", mongoIdParam, moderateJob);
 router.get("/applications", getApplications);
 router.get("/analytics", getAnalytics);
+router.get("/email/templates", listEmailTemplates);
+router.get("/email/templates/validate", validateEmailTemplates);
+router.post("/email/templates/:type/preview", previewEmailTemplate);
 
 module.exports = router;
 

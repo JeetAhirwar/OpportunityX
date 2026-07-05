@@ -3,8 +3,10 @@ const User = require("../models/user.model");
 const Job = require("../models/job.model");
 const Application = require("../models/application.model");
 const Company = require("../models/company.model");
+const emailService = require("../services/email.service");
 const notificationService = require("../services/notification.service");
 const { TYPES } = notificationService;
+const { EMAIL_TYPES } = emailService;
 
 const safeUserFields = "name email role isActive isVerified lastLogin createdAt updatedAt";
 const isSelf = (req) => String(req.user._id) === String(req.params.id);
@@ -221,6 +223,19 @@ const notifyRecruiter = async (req, company, approved, reason = "") => {
     priority: approved ? "normal" : "high",
     dedupeKey: `recruiter-verification:${company._id}:${approved ? "approved" : "rejected"}:${company.updatedAt?.getTime?.() || Date.now()}`,
   });
+  const recruiter = await User.findById(company.recruiter).select("name email");
+  if (recruiter?.email) {
+    emailService.send({
+      to: recruiter.email,
+      type: approved ? EMAIL_TYPES.RECRUITER_APPROVED : EMAIL_TYPES.RECRUITER_REJECTED,
+      data: {
+        name: recruiter.name,
+        companyName: company.companyName,
+        reason,
+      },
+      dedupeKey: `email-recruiter-verification:${company._id}:${approved ? "approved" : "rejected"}:${company.updatedAt?.getTime?.() || Date.now()}`,
+    });
+  }
 };
 
 exports.approveRecruiter = async (req, res) => {
@@ -287,6 +302,14 @@ exports.moderateJob = async (req, res) => {
         priority: req.body.status === "closed" ? "high" : "normal",
         dedupeKey: `job-moderation:${job._id}:${req.body.status}:${job.updatedAt?.getTime?.() || Date.now()}`,
       });
+      if (job.postedBy?.email) {
+        emailService.send({
+          to: job.postedBy.email,
+          type: req.body.status === "closed" ? EMAIL_TYPES.RECRUITER_JOB_EXPIRED : EMAIL_TYPES.RECRUITER_JOB_PUBLISHED,
+          data: { name: job.postedBy.name, jobTitle: job.title, companyName: job.company },
+          dedupeKey: `email-job-moderation:${job._id}:${req.body.status}:${job.updatedAt?.getTime?.() || Date.now()}`,
+        });
+      }
     }
     res.json({ success: true, data: job });
   } catch (error) { res.status(500).json({ success: false, message: error.message }); }

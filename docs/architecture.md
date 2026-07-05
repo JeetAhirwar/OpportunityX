@@ -34,3 +34,16 @@ silently masking broken links.
 
 The existing controller behavior is intentionally preserved. New business
 logic should move into `src/services` as controllers become more complex.
+
+## Email automation
+
+Email automation is isolated behind `backend/src/services/email.service.js`.
+Controllers enqueue email intents; the email layer renders branded responsive
+templates from `src/email/templates/registry.js`, sends through the configured
+provider adapter, and retries through a queue abstraction. The current adapter
+is Nodemailer, while the factory is structured for Resend, SendGrid, Amazon
+SES, Mailgun, and Brevo without controller changes.
+
+Admin-only preview and validation endpoints live under
+`/api/admin/email/templates`. See `docs/email-architecture.md` for provider
+configuration, security constraints, and template coverage.

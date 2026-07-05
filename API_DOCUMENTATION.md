@@ -197,6 +197,12 @@ All other admin endpoints require an authenticated user with role `admin`.
 - `GET /api/admin/jobs` lists all jobs.
 - `PATCH /api/admin/jobs/:id/moderate` changes status or featured state.
 - `GET /api/admin/applications` returns a read-only populated application list.
+- `GET /api/admin/email/templates` lists registered enterprise email template
+  keys.
+- `GET /api/admin/email/templates/validate` renders every template with safe
+  preview data and reports HTML, text, branding, and footer coverage.
+- `POST /api/admin/email/templates/:type/preview` renders a template preview.
+  Example type: `auth.forgotPassword`.
 
 ## Recruiter
 

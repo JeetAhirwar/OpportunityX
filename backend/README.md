@@ -35,6 +35,12 @@ Set `ADMIN_REGISTRATION_CODE` before creating the first admin. The code is
 required by `POST /api/admin/bootstrap`, is never logged or returned, and the
 endpoint disables itself after any admin account exists.
 
+Email automation uses `EMAIL_PROVIDER=nodemailer` by default and reads SMTP
+settings from `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`,
+`FROM_EMAIL`, and `FROM_NAME`. Legacy `SMTP_PASS` and `EMAIL_FROM` are still
+accepted. Templates can be inspected through admin endpoints under
+`/api/admin/email/templates`.
+
 ```json
 {
   "name": "Admin",

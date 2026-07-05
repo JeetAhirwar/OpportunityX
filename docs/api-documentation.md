@@ -54,6 +54,9 @@ Authorization: Bearer <jwt>
 | Admin | `GET /api/admin/jobs` | Admin |
 | Admin | `PATCH /api/admin/jobs/:id/moderate` | Admin |
 | Admin | `GET /api/admin/applications` | Admin |
+| Admin | `GET /api/admin/email/templates` | Admin |
+| Admin | `GET /api/admin/email/templates/validate` | Admin |
+| Admin | `POST /api/admin/email/templates/:type/preview` | Admin |
 | Admin | `/api/admin/*` | Admin |
 | Public | `GET /api/public/profile/:username` | Public |
 | Public | `GET /api/public/jobs/:id` | Public |
@@ -66,9 +69,16 @@ Register and login return an access token plus a safe user DTO containing
 password-reset fields are never returned. `GET /api/auth/me` validates the
 stored access token and returns the same safe user information.
 
-Password reset email delivery requires `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`,
-`SMTP_PASS`, and `EMAIL_FROM`. Replace example values with real credentials in
+Enterprise email delivery supports auth, candidate, recruiter, and admin
+templates through a provider-neutral service. The current provider is
+Nodemailer. Configure `EMAIL_PROVIDER`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`,
+`SMTP_PASSWORD`, `FROM_EMAIL`, and `FROM_NAME`. Legacy `SMTP_PASS` and
+`EMAIL_FROM` remain supported. Replace example values with real credentials in
 production and never commit `.env`.
+
+Admin email preview endpoints render templates without sending email:
+`GET /api/admin/email/templates`, `GET /api/admin/email/templates/validate`,
+and `POST /api/admin/email/templates/:type/preview`.
 
 Backend logs are emitted as structured JSON through `LOG_LEVEL`
 (`error`, `warn`, `info`, or `debug`). Common secret fields such as passwords,

@@ -1,8 +1,11 @@
 ﻿const Application = require("../models/application.model");
 const Job = require("../models/job.model");
+const User = require("../models/user.model");
+const emailService = require("../services/email.service");
 const notificationService = require("../services/notification.service");
 const { TYPES } = notificationService;
 const mongoose = require("mongoose");
+const { EMAIL_TYPES } = emailService;
 
 // Apply to job
 exports.apply = async (req, res) => {
@@ -35,6 +38,12 @@ exports.apply = async (req, res) => {
         entityId: existing._id,
         link: `/recruiter/applicants/${job._id}`,
         dedupeKey: `application-reapplied:${existing._id}:${existing.appliedAt?.getTime?.() || Date.now()}`,
+      });
+      emailService.send({
+        to: req.user.email,
+        type: EMAIL_TYPES.CANDIDATE_JOB_APPLIED,
+        data: { name: req.user.name, jobTitle: job.title, companyName: job.company },
+        dedupeKey: `email-application-reapplied:${existing._id}:${existing.appliedAt?.getTime?.() || Date.now()}`,
       });
       return res.json(existing);
     }
@@ -71,6 +80,27 @@ exports.apply = async (req, res) => {
       link: `/recruiter/applicants/${job._id}`,
       dedupeKey: `new-application:${application._id}`,
     });
+    emailService.send({
+      to: req.user.email,
+      type: EMAIL_TYPES.CANDIDATE_JOB_APPLIED,
+      data: { name: req.user.name, jobTitle: job.title, companyName: job.company },
+      dedupeKey: `email-application-submitted:${application._id}`,
+    });
+    User.findById(job.postedBy).select("name email").then((recruiter) => {
+      if (!recruiter?.email) return;
+      emailService.send({
+        to: recruiter.email,
+        type: EMAIL_TYPES.RECRUITER_NEW_APPLICATION_RECEIVED,
+        data: {
+          name: recruiter.name,
+          candidateName: req.user.name,
+          jobTitle: job.title,
+          companyName: job.company,
+          jobId: job._id,
+        },
+        dedupeKey: `email-new-application:${application._id}`,
+      });
+    }).catch((error) => console.error(`Recruiter application email failed: ${error.message}`));
 
     res.status(201).json(application);
   } catch (error) {
@@ -120,6 +150,19 @@ exports.getApplicants = async (req, res) => {
       link: "/candidate/applied",
       dedupeKey: `application-viewed:${application._id}`,
     })));
+    applicants.forEach((application) => {
+      if (!application.candidate?.email) return;
+      emailService.send({
+        to: application.candidate.email,
+        type: EMAIL_TYPES.CANDIDATE_APPLICATION_VIEWED,
+        data: {
+          name: application.candidate.name,
+          jobTitle: application.job?.title || job.title,
+          companyName: application.job?.company || job.company,
+        },
+        dedupeKey: `email-application-viewed:${application._id}`,
+      });
+    });
 
     res.json(applicants);
   } catch (error) {
@@ -151,6 +194,7 @@ exports.updateStatus = async (req, res) => {
     existing.status = req.body.status;
     await existing.save();
     const application = await existing.populate("job", "title company");
+    await application.populate("candidate", "name email");
 
     if (!application) return res.status(404).json({ message: "Application not found" });
 
@@ -180,6 +224,25 @@ exports.updateStatus = async (req, res) => {
       link: "/candidate/applied",
       dedupeKey: `application-status:${application._id}:${req.body.status}:${application.updatedAt?.getTime?.() || Date.now()}`,
     });
+    const statusEmailType = {
+      reviewed: EMAIL_TYPES.CANDIDATE_APPLICATION_VIEWED,
+      shortlisted: EMAIL_TYPES.CANDIDATE_SHORTLISTED,
+      interview: EMAIL_TYPES.CANDIDATE_INTERVIEW_SCHEDULED,
+      offer: EMAIL_TYPES.CANDIDATE_OFFER_LETTER,
+      rejected: EMAIL_TYPES.CANDIDATE_REJECTED,
+    }[req.body.status];
+    if (statusEmailType && application.candidate?.email) {
+      emailService.send({
+        to: application.candidate.email,
+        type: statusEmailType,
+        data: {
+          name: application.candidate.name,
+          jobTitle: application.job?.title,
+          companyName: application.job?.company,
+        },
+        dedupeKey: `email-application-status:${application._id}:${req.body.status}:${application.updatedAt?.getTime?.() || Date.now()}`,
+      });
+    }
 
     res.json(application);
   } catch (error) {

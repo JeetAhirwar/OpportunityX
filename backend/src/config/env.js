@@ -25,9 +25,21 @@ module.exports = Object.freeze({
     host: process.env.SMTP_HOST || "",
     port: Number(process.env.SMTP_PORT || 587),
     user: process.env.SMTP_USER || "",
-    pass: process.env.SMTP_PASS || "",
+    pass: process.env.SMTP_PASSWORD || process.env.SMTP_PASS || "",
   }),
-  emailFrom: process.env.EMAIL_FROM || "OpportunityX <no-reply@opportunityx.local>",
+  email: Object.freeze({
+    provider: process.env.EMAIL_PROVIDER || "nodemailer",
+    fromEmail: process.env.FROM_EMAIL || process.env.EMAIL_FROM_ADDRESS || "no-reply@opportunityx.local",
+    fromName: process.env.FROM_NAME || "OpportunityX",
+    from: process.env.EMAIL_FROM || `${process.env.FROM_NAME || "OpportunityX"} <${process.env.FROM_EMAIL || process.env.EMAIL_FROM_ADDRESS || "no-reply@opportunityx.local"}>`,
+  }),
+  emailFrom: process.env.EMAIL_FROM || `${process.env.FROM_NAME || "OpportunityX"} <${process.env.FROM_EMAIL || process.env.EMAIL_FROM_ADDRESS || "no-reply@opportunityx.local"}>`,
+  supportEmail: process.env.SUPPORT_EMAIL || "support@opportunityx.local",
+  privacyUrl: process.env.PRIVACY_URL || "",
+  socialLinks: Object.freeze({
+    linkedin: process.env.SOCIAL_LINKEDIN || "",
+    x: process.env.SOCIAL_X || "",
+  }),
   aiProvider: process.env.AI_PROVIDER || "gemini",
   aiFallbackProviders: (process.env.AI_FALLBACK_PROVIDERS || "openrouter,groq,openai")
     .split(",")

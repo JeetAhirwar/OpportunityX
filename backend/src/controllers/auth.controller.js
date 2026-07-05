@@ -2,9 +2,10 @@ const crypto = require("crypto");
 const User = require("../models/user.model");
 const generateToken = require("../utils/generateToken");
 const env = require("../config/env");
-const { sendPasswordResetEmail } = require("../services/email.service");
+const emailService = require("../services/email.service");
 const notificationService = require("../services/notification.service");
 const { TYPES } = notificationService;
+const { EMAIL_TYPES } = emailService;
 
 const safeUser = (user) => ({
   _id: user._id,
@@ -22,6 +23,18 @@ exports.register = async (req, res) => {
     if (userExists) return res.status(400).json({ message: "User already exists" });
 
     const user = await User.create({ name, email, password, role });
+    emailService.send({
+      to: user.email,
+      type: EMAIL_TYPES.AUTH_WELCOME,
+      data: { name: user.name },
+      dedupeKey: `welcome:${user._id}`,
+    });
+    emailService.send({
+      to: user.email,
+      type: role === "recruiter" ? EMAIL_TYPES.RECRUITER_REGISTERED : EMAIL_TYPES.CANDIDATE_REGISTRATION_SUCCESSFUL,
+      data: { name: user.name },
+      dedupeKey: `registration:${user._id}:${role}`,
+    });
     if (role === "recruiter") {
       await notificationService.notifyAdmins({
         io: req.app.get("io"),
@@ -34,6 +47,11 @@ exports.register = async (req, res) => {
         link: "/admin/approvals",
         priority: "high",
         dedupeKey: `recruiter-registered:${user._id}`,
+      });
+      await emailService.sendToAdmins({
+        type: EMAIL_TYPES.ADMIN_NEW_RECRUITER_REGISTERED,
+        data: { recruiterName: user.name, recruiterEmail: user.email },
+        dedupeKey: `admin-new-recruiter:${user._id}`,
       });
     }
     return res.status(201).json({
@@ -93,7 +111,7 @@ exports.forgotPassword = async (req, res) => {
 
       const resetUrl = `${env.clientUrl.replace(/\/$/, "")}/reset-password/${resetToken}`;
       try {
-        await sendPasswordResetEmail({
+        await emailService.sendPasswordResetEmail({
           email: user.email,
           name: user.name,
           resetUrl,
@@ -126,6 +144,12 @@ exports.resetPassword = async (req, res) => {
     user.resetPasswordToken = null;
     user.resetPasswordExpires = null;
     await user.save();
+    emailService.send({
+      to: user.email,
+      type: EMAIL_TYPES.AUTH_RESET_PASSWORD,
+      data: { name: user.name },
+      dedupeKey: `password-reset:${user._id}:${Date.now()}`,
+    });
 
     return res.json({ success: true, message: "Password reset successfully" });
   } catch (error) {

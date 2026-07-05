@@ -1,6 +1,8 @@
 const Company = require("../models/company.model");
+const emailService = require("../services/email.service");
 const notificationService = require("../services/notification.service");
 const { TYPES } = notificationService;
+const { EMAIL_TYPES } = emailService;
 
 const defaultsFor = (user) => ({
   recruiter: user._id,
@@ -69,6 +71,11 @@ exports.submitVerification = async (req, res) => {
         link: "/admin/approvals",
         priority: "high",
         dedupeKey: `recruiter-approval-pending:${company._id}:${company.submittedAt?.getTime?.() || Date.now()}`,
+      });
+      await emailService.sendToAdmins({
+        type: EMAIL_TYPES.ADMIN_RECRUITER_APPROVAL_REQUIRED,
+        data: { companyName: company.companyName, recruiterName: company.recruiterName },
+        dedupeKey: `email-recruiter-approval-pending:${company._id}:${company.submittedAt?.getTime?.() || Date.now()}`,
       });
     }
     res.json({ success: true, data: company, message: "Verification request submitted." });

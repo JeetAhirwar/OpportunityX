@@ -64,6 +64,12 @@ Notifications are persisted in MongoDB, delivered in real time over Socket.IO pe
 
 Supported events include application submission/view/status changes, interview/offer/rejection updates, candidate withdrawal, candidate/recruiter messages, recruiter registration and verification review, job moderation, account updates, failed uploads, and system/admin alert types.
 
+## Enterprise Email Automation
+
+Email automation is provider-neutral and currently uses Nodemailer through SMTP. Candidate, recruiter, admin, and auth emails share branded responsive templates, a registry, safe HTML escaping, queue abstraction, retry support, and admin-only preview/validation endpoints.
+
+Configure `EMAIL_PROVIDER`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `FROM_EMAIL`, and `FROM_NAME` in `backend/.env`. Legacy `SMTP_PASS` and `EMAIL_FROM` remain supported. See [email architecture](docs/email-architecture.md) for provider migration notes and template coverage.
+
 ## AI Features
 
 AI endpoints are served from `/api/ai` and require role-based auth. Set provider keys such as `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, `GROQ_API_KEY`, or `OPENAI_API_KEY` in `backend/.env` to enable provider responses. Without a configured provider, the frontend shows unavailable states instead of fake AI content.
@@ -90,4 +96,4 @@ The latest design pass also removes fake homepage testimonials/statistics, stren
 
 Phase 11 hardening covers route/API alignment, protected route behavior, chat socket cleanup, global frontend error recovery, backend structured logging, upload filename hardening, dependency security updates, enterprise notifications, and final build/test validation. See [production readiness audit](docs/production-readiness-audit.md) for the route/API/security/performance validation report.
 
-See [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md), [architecture](docs/architecture.md), [API documentation](docs/api-documentation.md), and the [deployment guide](docs/deployment-guide.md).
+See [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md), [architecture](docs/architecture.md), [email architecture](docs/email-architecture.md), [API documentation](docs/api-documentation.md), and the [deployment guide](docs/deployment-guide.md).
