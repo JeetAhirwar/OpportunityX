@@ -60,13 +60,41 @@ Socket events implemented:
 
 ## Notifications
 
-- `GET /api/notifications` returns the current user's notifications. Responses
-  include `recipient` for the Phase 6 contract and `user` for compatibility.
-- `PATCH /api/notifications/:id/read` marks one notification read.
-- `PATCH /api/notifications/read-all` marks all current-user notifications
-  read.
-- Notifications are created for new applications, candidate application status
-  updates, recruiter verification approval/rejection, and new messages.
+Notification endpoints are mounted at `/api/notifications` and require the
+OpportunityX bearer token. Users can only access their own notifications;
+admin, recruiter, and candidate notifications are isolated by recipient room
+and MongoDB owner filters.
+
+- `GET /api/notifications` returns the current user's latest notifications as
+  an array for backward compatibility.
+- `GET /api/notifications?page=1&limit=20&unreadOnly=false&type=message`
+  returns `{ success, notifications, pagination, unreadCount }` for paginated
+  notification centers.
+- `GET /api/notifications/unread-count` returns `{ unreadCount }`.
+- `PATCH /api/notifications/:id/read` marks one owned notification read.
+- `PATCH /api/notifications/read-all` marks all owned notifications read.
+- `DELETE /api/notifications/:id` deletes one owned notification.
+- `DELETE /api/notifications/clear` clears all owned notifications.
+
+Notification documents persist `recipient`, backward-compatible `user`,
+optional `sender`, `type`, `title`, `message`, `entityType`, `entityId`,
+`link`, `icon`, `priority`, `isRead`, backward-compatible `read`, `readAt`,
+`metadata`, and timestamps.
+
+Socket events:
+
+- `notification_created` and `notification_received` deliver the notification
+  payload to the recipient room.
+- `notifications_unread_count` delivers `{ unreadCount }` after create, read,
+  read-all, delete, and clear actions.
+
+Implemented notification types include `application_submitted`,
+`application_viewed`, `application_shortlisted`, `interview_scheduled`,
+`interview_updated`, `offer_received`, `application_rejected`,
+`message_received`, `profile_verification`, `account_update`,
+`new_application`, `application_withdrawn`, `job_moderation`,
+`admin_announcement`, `recruiter_registered`, `recruiter_approval_pending`,
+`abuse_report`, `failed_upload`, and `system_alert`.
 
 ## AI
 

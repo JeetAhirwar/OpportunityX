@@ -1,15 +1,19 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/store/AuthContext";
 import { useTheme } from "@/store/ThemeContext";
 import { Menu, X, Sun, Moon, Bell, MessageSquare, User, ChevronDown, LogOut, Settings, LayoutDashboard, } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 import OXLogo from "@/components/common/OXLogo";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, } from "@/components/ui/dropdown-menu";
 import { useChat } from "@/features/chat/ChatContext";
+import { getNotificationsPage, markAllNotificationsRead, markNotificationRead } from "@/features/notifications/notificationApi";
 const Navbar = () => {
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [recentNotifications, setRecentNotifications] = useState([]);
+    const [notificationsLoading, setNotificationsLoading] = useState(false);
     const { user, isAuthenticated, logout } = useAuth();
     const { theme, toggleTheme } = useTheme();
     const location = useLocation();
@@ -59,6 +63,35 @@ const Navbar = () => {
         { label: "Notifications", href: notificationsLink, icon: Bell },
         { label: "Settings", href: getSettingsLink(), icon: Settings },
     ];
+    const loadRecentNotifications = useCallback(async () => {
+        if (!isAuthenticated)
+            return;
+        setNotificationsLoading(true);
+        try {
+            const response = await getNotificationsPage({ page: 1, limit: 5 });
+            setRecentNotifications(response.notifications);
+        }
+        finally {
+            setNotificationsLoading(false);
+        }
+    }, [isAuthenticated]);
+    useEffect(() => {
+        if (!isAuthenticated) {
+            setRecentNotifications([]);
+            return;
+        }
+        void loadRecentNotifications();
+    }, [isAuthenticated, loadRecentNotifications, unreadNotifications]);
+    const openNotification = async (notification) => {
+        if (!notification.read)
+            await markNotificationRead(notification._id);
+        const target = notification.link === "/messages" ? messagesLink : notification.link || notificationsLink;
+        window.location.href = target;
+    };
+    const markRecentAllRead = async () => {
+        await markAllNotificationsRead();
+        setRecentNotifications((items) => items.map((item) => ({ ...item, read: true, isRead: true })));
+    };
     return (<nav className="sticky top-0 z-50 border-b border-border/60 bg-background/78 shadow-[0_10px_34px_hsl(224_48%_3%/0.16)] backdrop-blur-2xl">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2">
@@ -83,12 +116,33 @@ const Navbar = () => {
           </Button>
 
           {isAuthenticated ? (<>
-              <Button variant="ghost" size="icon" className="relative rounded-full" aria-label="View notifications" asChild>
-                <Link to={notificationsLink}>
-                  <Bell className="h-4 w-4"/>
-                  {unreadNotifications > 0 && <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] text-destructive-foreground">{Math.min(unreadNotifications, 99)}</span>}
-                </Link>
-              </Button>
+              <DropdownMenu onOpenChange={(open) => { if (open) void loadRecentNotifications(); }}>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="relative rounded-full" aria-label="View notifications">
+                    <Bell className="h-4 w-4"/>
+                    {unreadNotifications > 0 && <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] text-destructive-foreground">{Math.min(unreadNotifications, 99)}</span>}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-80">
+                  <div className="flex items-center justify-between px-3 py-2">
+                    <p className="text-sm font-semibold">Notifications</p>
+                    {unreadNotifications > 0 && <button type="button" className="text-xs font-medium text-primary" onClick={() => void markRecentAllRead()}>Mark all read</button>}
+                  </div>
+                  <DropdownMenuSeparator />
+                  {notificationsLoading ? <div className="px-3 py-4 text-sm text-muted-foreground">Loading notifications...</div> : recentNotifications.length ? recentNotifications.map((notification) => (<DropdownMenuItem key={notification._id} onClick={() => void openNotification(notification)} className="cursor-pointer items-start gap-3 py-3">
+                      <span className={`mt-1 h-2 w-2 shrink-0 rounded-full ${notification.read ? "bg-muted" : "bg-primary"}`}/>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium">{notification.title}</span>
+                        <span className="line-clamp-2 text-xs text-muted-foreground">{notification.message}</span>
+                        <span className="mt-1 block text-[11px] text-muted-foreground">{formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}</span>
+                      </span>
+                    </DropdownMenuItem>)) : <div className="px-3 py-4 text-sm text-muted-foreground">No notifications yet.</div>}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to={notificationsLink} className="cursor-pointer justify-center text-sm font-medium">View all notifications</Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               {user?.role !== "admin" && (<Button variant="ghost" size="icon" className="relative rounded-full" aria-label="Open messages" asChild>
                   <Link to={messagesLink}>
                     <MessageSquare className="h-4 w-4"/>

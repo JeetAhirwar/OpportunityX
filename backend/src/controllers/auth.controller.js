@@ -3,6 +3,8 @@ const User = require("../models/user.model");
 const generateToken = require("../utils/generateToken");
 const env = require("../config/env");
 const { sendPasswordResetEmail } = require("../services/email.service");
+const notificationService = require("../services/notification.service");
+const { TYPES } = notificationService;
 
 const safeUser = (user) => ({
   _id: user._id,
@@ -20,6 +22,20 @@ exports.register = async (req, res) => {
     if (userExists) return res.status(400).json({ message: "User already exists" });
 
     const user = await User.create({ name, email, password, role });
+    if (role === "recruiter") {
+      await notificationService.notifyAdmins({
+        io: req.app.get("io"),
+        sender: user._id,
+        type: TYPES.RECRUITER_REGISTERED,
+        title: "New Recruiter Registration",
+        message: `${user.name} registered as a recruiter and may need verification review.`,
+        entityType: "user",
+        entityId: user._id,
+        link: "/admin/approvals",
+        priority: "high",
+        dedupeKey: `recruiter-registered:${user._id}`,
+      });
+    }
     return res.status(201).json({
       token: generateToken(user._id),
       user: safeUser(user),

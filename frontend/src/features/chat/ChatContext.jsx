@@ -3,6 +3,7 @@ import { useAuth } from "@/store/AuthContext";
 import api from "@/services/api";
 import { getConversations } from "./messageApi";
 import { disconnectChatSocket, getChatSocket } from "./socketClient";
+import { getUnreadNotificationCount, normalizeNotification } from "@/features/notifications/notificationApi";
 const ChatContext = createContext(null);
 export const ChatProvider = ({ children }) => {
     const { user, isAuthenticated } = useAuth();
@@ -19,8 +20,7 @@ export const ChatProvider = ({ children }) => {
     const reloadNotifications = useCallback(async () => {
         if (!isAuthenticated)
             return;
-        const notifications = await api.get("/notifications");
-        setUnreadNotifications(notifications.filter((item) => !item.read).length);
+        setUnreadNotifications(await getUnreadNotificationCount());
     }, [isAuthenticated]);
     useEffect(() => {
         if (!isAuthenticated) {
@@ -35,24 +35,28 @@ export const ChatProvider = ({ children }) => {
         const socket = getChatSocket();
         const onConversations = (items) => setConversations(items);
         const onNotification = (notification) => {
-            if (notification?._id) {
-                if (receivedNotificationIds.current.has(notification._id))
+            const normalized = normalizeNotification(notification || {});
+            if (normalized?._id) {
+                if (receivedNotificationIds.current.has(normalized._id))
                     return;
-                receivedNotificationIds.current.add(notification._id);
+                receivedNotificationIds.current.add(normalized._id);
             }
             setUnreadNotifications((count) => count + 1);
         };
+        const onUnreadCount = ({ unreadCount } = {}) => setUnreadNotifications(Number(unreadCount) || 0);
         if (user?.role !== "admin")
             socket.on("conversations_updated", onConversations);
         socket.on("online_users", setOnlineUsers);
         socket.on("notification_created", onNotification);
         socket.on("notification_received", onNotification);
+        socket.on("notifications_unread_count", onUnreadCount);
         socket.connect();
         return () => {
             socket.off("conversations_updated", onConversations);
             socket.off("online_users", setOnlineUsers);
             socket.off("notification_created", onNotification);
             socket.off("notification_received", onNotification);
+            socket.off("notifications_unread_count", onUnreadCount);
         };
     }, [isAuthenticated, reloadConversations, reloadNotifications, user?.role]);
     const value = useMemo(() => ({

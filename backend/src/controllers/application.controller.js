@@ -1,13 +1,8 @@
 ﻿const Application = require("../models/application.model");
 const Job = require("../models/job.model");
-const Notification = require("../models/notification.model");
+const notificationService = require("../services/notification.service");
+const { TYPES } = notificationService;
 const mongoose = require("mongoose");
-
-const emitNotification = (req, userId, notification) => {
-  const io = req.app.get("io");
-  io?.to(String(userId)).emit("notification_created", notification);
-  io?.to(String(userId)).emit("notification_received", notification);
-};
 
 // Apply to job
 exports.apply = async (req, res) => {
@@ -29,6 +24,18 @@ exports.apply = async (req, res) => {
       await existing.save();
 
       await Job.findByIdAndUpdate(jobId, { $inc: { applicantCount: 1 } });
+      await notificationService.createNotification({
+        io: req.app.get("io"),
+        recipient: job.postedBy,
+        sender: req.user._id,
+        type: TYPES.NEW_APPLICATION,
+        title: "New Application Received",
+        message: `${req.user.name} reapplied for ${job.title}.`,
+        entityType: "application",
+        entityId: existing._id,
+        link: `/recruiter/applicants/${job._id}`,
+        dedupeKey: `application-reapplied:${existing._id}:${existing.appliedAt?.getTime?.() || Date.now()}`,
+      });
       return res.json(existing);
     }
 
@@ -40,21 +47,30 @@ exports.apply = async (req, res) => {
 
     await Job.findByIdAndUpdate(jobId, { $inc: { applicantCount: 1 } });
 
-    // Notify candidate
-    await Notification.create({
-      user: req.user._id,
+    await notificationService.createNotification({
+      io: req.app.get("io"),
+      recipient: req.user._id,
+      sender: job.postedBy,
+      type: TYPES.APPLICATION_SUBMITTED,
       title: "Application Submitted",
-      message: "Your application has been submitted successfully.",
-      type: "success",
+      message: `Your application for ${job.title} has been submitted successfully.`,
+      entityType: "application",
+      entityId: application._id,
+      link: "/candidate/applied",
+      dedupeKey: `application-submitted:${application._id}`,
     });
-    const recruiterNotification = await Notification.create({
-      user: job.postedBy,
+    await notificationService.createNotification({
+      io: req.app.get("io"),
+      recipient: job.postedBy,
+      sender: req.user._id,
+      type: TYPES.NEW_APPLICATION,
       title: "New Application Received",
       message: `${req.user.name} applied for ${job.title}.`,
-      type: "info",
-      link: "/recruiter/applicants",
+      entityType: "application",
+      entityId: application._id,
+      link: `/recruiter/applicants/${job._id}`,
+      dedupeKey: `new-application:${application._id}`,
     });
-    emitNotification(req, job.postedBy, recruiterNotification);
 
     res.status(201).json(application);
   } catch (error) {
@@ -92,6 +108,18 @@ exports.getApplicants = async (req, res) => {
       .populate("candidate", "name email")
       .populate("job", "title company location")
       .sort({ createdAt: -1 });
+    await Promise.all(applicants.map((application) => notificationService.createNotification({
+      io: req.app.get("io"),
+      recipient: application.candidate._id || application.candidate,
+      sender: req.user._id,
+      type: TYPES.APPLICATION_VIEWED,
+      title: "Application Viewed",
+      message: `Your application for ${application.job?.title || job.title} was viewed by the recruiter.`,
+      entityType: "application",
+      entityId: application._id,
+      link: "/candidate/applied",
+      dedupeKey: `application-viewed:${application._id}`,
+    })));
 
     res.json(applicants);
   } catch (error) {
@@ -126,14 +154,32 @@ exports.updateStatus = async (req, res) => {
 
     if (!application) return res.status(404).json({ message: "Application not found" });
 
-    // Notify candidate
-    const notification = await Notification.create({
-      user: application.candidate,
-      title: "Application Update",
+    const statusType = {
+      reviewed: TYPES.APPLICATION_VIEWED,
+      shortlisted: TYPES.APPLICATION_SHORTLISTED,
+      interview: TYPES.INTERVIEW_SCHEDULED,
+      offer: TYPES.OFFER_RECEIVED,
+      rejected: TYPES.APPLICATION_REJECTED,
+    }[req.body.status] || TYPES.ACCOUNT_UPDATE;
+    const statusTitle = {
+      reviewed: "Application Viewed",
+      shortlisted: "You Were Shortlisted",
+      interview: "Interview Scheduled",
+      offer: "Offer Received",
+      rejected: "Application Rejected",
+    }[req.body.status] || "Application Update";
+    await notificationService.createNotification({
+      io: req.app.get("io"),
+      recipient: application.candidate,
+      sender: req.user._id,
+      type: statusType,
+      title: statusTitle,
       message: `Your application for ${application.job?.title} has been ${req.body.status}.`,
-      type: req.body.status === "rejected" ? "error" : "success",
+      entityType: "application",
+      entityId: application._id,
+      link: "/candidate/applied",
+      dedupeKey: `application-status:${application._id}:${req.body.status}:${application.updatedAt?.getTime?.() || Date.now()}`,
     });
-    emitNotification(req, application.candidate, notification);
 
     res.json(application);
   } catch (error) {
@@ -144,7 +190,7 @@ exports.updateStatus = async (req, res) => {
 // Withdraw application (candidate)
 exports.withdraw = async (req, res) => {
   try {
-    const application = await Application.findOne({ _id: req.params.id, candidate: req.user._id });
+    const application = await Application.findOne({ _id: req.params.id, candidate: req.user._id }).populate("job", "title postedBy");
     if (!application) return res.status(404).json({ message: "Application not found" });
     if (["offer", "rejected", "withdrawn"].includes(application.status)) {
       return res.status(400).json({ message: "Cannot withdraw this application" });
@@ -153,6 +199,18 @@ exports.withdraw = async (req, res) => {
     application.status = "withdrawn";
     await application.save();
     await Job.findByIdAndUpdate(application.job, { $inc: { applicantCount: -1 } });
+    await notificationService.createNotification({
+      io: req.app.get("io"),
+      recipient: application.job.postedBy,
+      sender: req.user._id,
+      type: TYPES.APPLICATION_WITHDRAWN,
+      title: "Candidate Withdrew Application",
+      message: `${req.user.name} withdrew their application for ${application.job.title}.`,
+      entityType: "application",
+      entityId: application._id,
+      link: `/recruiter/applicants/${application.job._id}`,
+      dedupeKey: `application-withdrawn:${application._id}:${application.updatedAt?.getTime?.() || Date.now()}`,
+    });
 
     res.json(application);
   } catch (error) {

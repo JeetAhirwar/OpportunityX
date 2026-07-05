@@ -3,7 +3,8 @@ const User = require("../models/user.model");
 const Job = require("../models/job.model");
 const Application = require("../models/application.model");
 const Company = require("../models/company.model");
-const Notification = require("../models/notification.model");
+const notificationService = require("../services/notification.service");
+const { TYPES } = notificationService;
 
 const safeUserFields = "name email role isActive isVerified lastLogin createdAt updatedAt";
 const isSelf = (req) => String(req.user._id) === String(req.params.id);
@@ -137,6 +138,19 @@ exports.updateUserStatus = async (req, res) => {
     if (!target) return res.status(404).json({ success: false, message: "User not found" });
     if (req.body.isActive === false && await ensureNotLastAdmin(target, res, "suspend")) return;
     const user = await User.findByIdAndUpdate(req.params.id, { isActive: req.body.isActive }, { new: true }).select(safeUserFields);
+    await notificationService.createNotification({
+      io: req.app.get("io"),
+      recipient: user._id,
+      sender: req.user._id,
+      type: TYPES.ACCOUNT_UPDATE,
+      title: "Account Status Updated",
+      message: `Your account has been ${user.isActive ? "activated" : "deactivated"}.`,
+      entityType: "user",
+      entityId: user._id,
+      link: user.role === "admin" ? "/admin/settings" : user.role === "recruiter" ? "/recruiter/settings" : "/candidate/settings",
+      priority: user.isActive ? "normal" : "high",
+      dedupeKey: `account-status:${user._id}:${user.isActive}:${user.updatedAt?.getTime?.() || Date.now()}`,
+    });
     res.json({ success: true, data: user });
   } catch (error) { res.status(500).json({ success: false, message: error.message }); }
 };
@@ -150,6 +164,18 @@ exports.updateUserRole = async (req, res) => {
     }
     if (target.role === "admin" && req.body.role !== "admin" && await ensureNotLastAdmin(target, res, "demote")) return;
     const user = await User.findByIdAndUpdate(req.params.id, { role: req.body.role }, { new: true }).select(safeUserFields);
+    await notificationService.createNotification({
+      io: req.app.get("io"),
+      recipient: user._id,
+      sender: req.user._id,
+      type: TYPES.ACCOUNT_UPDATE,
+      title: "Account Role Updated",
+      message: `Your account role is now ${user.role}.`,
+      entityType: "user",
+      entityId: user._id,
+      link: user.role === "admin" ? "/admin/settings" : user.role === "recruiter" ? "/recruiter/settings" : "/candidate/settings",
+      dedupeKey: `account-role:${user._id}:${user.role}:${user.updatedAt?.getTime?.() || Date.now()}`,
+    });
     res.json({ success: true, data: user });
   } catch (error) { res.status(500).json({ success: false, message: error.message }); }
 };
@@ -182,16 +208,19 @@ exports.getRecruiter = async (req, res) => {
 };
 
 const notifyRecruiter = async (req, company, approved, reason = "") => {
-  const notification = await Notification.create({
-    user: company.recruiter,
+  await notificationService.createNotification({
+    io: req.app.get("io"),
+    recipient: company.recruiter,
+    sender: req.user._id,
+    type: TYPES.PROFILE_VERIFICATION,
     title: approved ? "Recruiter Verification Approved" : "Recruiter Verification Rejected",
     message: approved ? "Your company has been verified. You can now publish active jobs." : `Your company verification was rejected.${reason ? ` Reason: ${reason}` : ""}`,
-    type: approved ? "success" : "error",
+    entityType: "company",
+    entityId: company._id,
     link: "/recruiter/company",
+    priority: approved ? "normal" : "high",
+    dedupeKey: `recruiter-verification:${company._id}:${approved ? "approved" : "rejected"}:${company.updatedAt?.getTime?.() || Date.now()}`,
   });
-  const io = req.app.get("io");
-  io?.to(String(company.recruiter)).emit("notification_created", notification);
-  io?.to(String(company.recruiter)).emit("notification_received", notification);
 };
 
 exports.approveRecruiter = async (req, res) => {
@@ -244,6 +273,21 @@ exports.moderateJob = async (req, res) => {
     if (typeof req.body.featured === "boolean") update.featured = req.body.featured;
     const job = await Job.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true }).populate("postedBy", "name email role isActive");
     if (!job) return res.status(404).json({ success: false, message: "Job not found" });
+    if (req.body.status) {
+      await notificationService.createNotification({
+        io: req.app.get("io"),
+        recipient: job.postedBy._id || job.postedBy,
+        sender: req.user._id,
+        type: TYPES.JOB_MODERATION,
+        title: req.body.status === "active" ? "Job Approved" : "Job Status Updated",
+        message: `Your job "${job.title}" is now ${req.body.status}.`,
+        entityType: "job",
+        entityId: job._id,
+        link: "/recruiter/jobs",
+        priority: req.body.status === "closed" ? "high" : "normal",
+        dedupeKey: `job-moderation:${job._id}:${req.body.status}:${job.updatedAt?.getTime?.() || Date.now()}`,
+      });
+    }
     res.json({ success: true, data: job });
   } catch (error) { res.status(500).json({ success: false, message: error.message }); }
 };

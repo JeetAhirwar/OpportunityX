@@ -28,6 +28,11 @@ Authorization: Bearer <jwt>
 | Saved jobs | `GET /api/saved-jobs` | Candidate |
 | Saved jobs | `POST /api/saved-jobs/:jobId` | Candidate toggle |
 | Notifications | `/api/notifications` | Authenticated |
+| Notifications | `GET /api/notifications/unread-count` | Authenticated |
+| Notifications | `PATCH /api/notifications/:id/read` | Owner |
+| Notifications | `PATCH /api/notifications/read-all` | Owner |
+| Notifications | `DELETE /api/notifications/:id` | Owner |
+| Notifications | `DELETE /api/notifications/clear` | Owner |
 | Chat | `GET /api/chat/conversations` | Candidate or recruiter |
 | Chat | `POST /api/chat/conversations/start` | Application participant |
 | Chat | `GET /api/chat/messages/:conversationId` | Conversation participant |
@@ -74,3 +79,8 @@ Socket clients authenticate with `auth: { token }` and may use
 `join_conversation`, `send_message`, `message_seen`, `message_reaction`,
 `edit_message`, `delete_message`, `typing_start`, `typing_stop`, and
 `mark_conversation_read`.
+
+Notification sockets are delivered to the authenticated user's personal room.
+The server emits `notification_created`, `notification_received`, and
+`notifications_unread_count` so multiple browser tabs stay synchronized after
+create, read, read-all, delete, and clear actions.

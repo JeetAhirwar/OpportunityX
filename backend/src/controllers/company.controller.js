@@ -1,4 +1,6 @@
 const Company = require("../models/company.model");
+const notificationService = require("../services/notification.service");
+const { TYPES } = notificationService;
 
 const defaultsFor = (user) => ({
   recruiter: user._id,
@@ -56,6 +58,18 @@ exports.submitVerification = async (req, res) => {
       company.submittedAt = new Date();
       company.rejectionReason = "";
       await company.save();
+      await notificationService.notifyAdmins({
+        io: req.app.get("io"),
+        sender: req.user._id,
+        type: TYPES.RECRUITER_APPROVAL_PENDING,
+        title: "Recruiter Approval Pending",
+        message: `${company.companyName || req.user.name} submitted company verification for review.`,
+        entityType: "company",
+        entityId: company._id,
+        link: "/admin/approvals",
+        priority: "high",
+        dedupeKey: `recruiter-approval-pending:${company._id}:${company.submittedAt?.getTime?.() || Date.now()}`,
+      });
     }
     res.json({ success: true, data: company, message: "Verification request submitted." });
   } catch (error) {

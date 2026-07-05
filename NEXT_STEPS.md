@@ -7,8 +7,8 @@
   further reduce role-specific chunks after the top-level route split.
 - Create or provide a branded Open Graph image and refreshed favicon for the
   OpportunityX premium brand package.
-- Phase 6 follow-up: add notification pagination/error-state refinements and
-  end-to-end socket authorization tests.
+- Add browser E2E coverage for notification dropdown, notification center
+  pagination, multi-tab unread-count sync, and socket reconnect recovery.
 - Phase 7 follow-up: add durable resume text extraction, structured AI output
   validation, AI audit logging, and integration tests for role authorization.
 - Replace the in-memory AI rate limiter with a distributed store before
@@ -44,5 +44,7 @@
   storage before production deployment.
 - Add integration tests backed by a disposable MongoDB instance for
   candidate/recruiter authorization, unread counters, and socket events.
-- Review existing dependency audit findings separately before production
-  deployment.
+- Add a durable admin announcements UI on top of the existing
+  `admin_announcement` notification type.
+- Add abuse report creation/moderation workflows on top of the existing
+  `abuse_report` notification type.

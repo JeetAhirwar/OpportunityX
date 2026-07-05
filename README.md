@@ -58,6 +58,12 @@ Chat uses the existing OpportunityX JWT and MongoDB. Set `SOCKET_CORS_ORIGIN` in
 
 To test locally, apply to a job as a candidate, open Recruiter > Applicants as the owning recruiter, click the message button, and exchange messages between two browser sessions. History, typing, online state, seen state, unread badges, and message notifications persist/update through the merged backend.
 
+## Enterprise Notifications
+
+Notifications are persisted in MongoDB, delivered in real time over Socket.IO personal user rooms, and exposed through protected REST APIs. Candidate, recruiter, and admin events use the shared notification service/repository/gateway stack so unread counts stay synchronized across tabs and refreshes.
+
+Supported events include application submission/view/status changes, interview/offer/rejection updates, candidate withdrawal, candidate/recruiter messages, recruiter registration and verification review, job moderation, account updates, failed uploads, and system/admin alert types.
+
 ## AI Features
 
 AI endpoints are served from `/api/ai` and require role-based auth. Set provider keys such as `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, `GROQ_API_KEY`, or `OPENAI_API_KEY` in `backend/.env` to enable provider responses. Without a configured provider, the frontend shows unavailable states instead of fake AI content.
@@ -82,6 +88,6 @@ The latest design pass also removes fake homepage testimonials/statistics, stren
 
 ## Production Readiness
 
-Phase 11 hardening covers route/API alignment, protected route behavior, chat socket cleanup, global frontend error recovery, backend structured logging, upload filename hardening, dependency security updates, and final build/test validation. See [production readiness audit](docs/production-readiness-audit.md) for the route/API/security/performance validation report.
+Phase 11 hardening covers route/API alignment, protected route behavior, chat socket cleanup, global frontend error recovery, backend structured logging, upload filename hardening, dependency security updates, enterprise notifications, and final build/test validation. See [production readiness audit](docs/production-readiness-audit.md) for the route/API/security/performance validation report.
 
 See [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md), [architecture](docs/architecture.md), [API documentation](docs/api-documentation.md), and the [deployment guide](docs/deployment-guide.md).

@@ -1,7 +1,8 @@
 const Application = require("../models/application.model");
 const Conversation = require("../models/conversation.model");
 const Message = require("../models/message.model");
-const Notification = require("../models/notification.model");
+const notificationService = require("./notification.service");
+const { TYPES } = notificationService;
 
 const userFields = "name email role";
 
@@ -82,7 +83,7 @@ const startApplicationConversation = async (currentUser, applicationId) => {
     .populate("application", "status");
 };
 
-const createMessage = async ({ conversationId, senderId, content, attachments = [] }) => {
+const createMessage = async ({ conversationId, senderId, content, attachments = [], io = null }) => {
   const conversation = await assertConversationAccess(conversationId, senderId);
   const cleanContent = String(content || "").trim();
   if (!cleanContent && !attachments.length) {
@@ -107,12 +108,17 @@ const createMessage = async ({ conversationId, senderId, content, attachments = 
   await conversation.save();
 
   const populatedMessage = await Message.findById(message._id).populate("sender", userFields);
-  const notification = await Notification.create({
-    user: recipientId,
+  const notification = await notificationService.createNotification({
+    io,
+    recipient: recipientId,
+    sender: senderId,
+    type: TYPES.MESSAGE_RECEIVED,
     title: "New Message",
     message: `${populatedMessage.sender.name}: ${conversation.lastMessageText}`,
-    type: "info",
+    entityType: "conversation",
+    entityId: conversation._id,
     link: "/messages",
+    dedupeKey: `message:${message._id}`,
   });
   return { message: populatedMessage, conversation, recipientId, notification };
 };

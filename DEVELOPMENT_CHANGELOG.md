@@ -1,5 +1,30 @@
 # Development Changelog
 
+## 2026-07-05
+
+- Added an enterprise notification model with recipient/user compatibility,
+  sender, type, title, message, entity reference, link, icon, priority,
+  read/readAt state, metadata, timestamps, and recipient/read indexes.
+- Added notification repository, service, controller, routes, and Socket.IO
+  gateway layers for modular persistence and real-time delivery.
+- Added protected notification APIs for paginated list, unread count,
+  mark-one-read, mark-all-read, delete-one, and clear-all while preserving the
+  legacy array response for `GET /api/notifications`.
+- Wired notifications for application submitted/viewed/status updates,
+  interview/offer/rejection statuses, candidate withdrawal, chat messages,
+  recruiter registration, recruiter approval pending, recruiter
+  approval/rejection, job moderation, account status/role updates, and failed
+  uploads.
+- Added real-time unread count sync via `notifications_unread_count` to keep
+  multiple tabs consistent after create/read/delete actions.
+- Upgraded the Notification Center with paginated loading, load more,
+  mark-read, mark-all-read, delete, loading, empty, and error states using the
+  existing design system.
+- Added a navbar notification bell dropdown with recent notifications,
+  unread badge, mark-all-read, and full notification center navigation.
+- Added backend notification service tests covering persistence payloads,
+  duplicate prevention, and admin fanout.
+
 ## 2026-06-26
 
 - Redesigned the homepage into a stronger AI hiring intelligence landing
