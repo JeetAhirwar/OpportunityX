@@ -6,6 +6,15 @@ const notificationService = require("../services/notification.service");
 const { TYPES } = notificationService;
 const mongoose = require("mongoose");
 const { EMAIL_TYPES } = emailService;
+const legacyStageByStatus = {
+  applied: "applied",
+  reviewed: "screening",
+  shortlisted: "shortlisted",
+  interview: "interview_scheduled",
+  offer: "offer_sent",
+  rejected: "rejected",
+  withdrawn: "withdrawn",
+};
 
 // Apply to job
 exports.apply = async (req, res) => {
@@ -192,6 +201,13 @@ exports.updateStatus = async (req, res) => {
       return res.status(404).json({ message: "Application not found" });
     }
     existing.status = req.body.status;
+    existing.pipelineStage = legacyStageByStatus[req.body.status] || existing.pipelineStage;
+    existing.timeline.push({
+      type: "status_changed",
+      title: `Status changed to ${req.body.status}`,
+      toStage: existing.pipelineStage,
+      actor: req.user._id,
+    });
     await existing.save();
     const application = await existing.populate("job", "title company");
     await application.populate("candidate", "name email");
