@@ -5,6 +5,7 @@ const http = require("http");
 const { Server } = require("socket.io");
 const socketAuth = require("./socket/socketAuth");
 const socketHandler = require("./socket/socket");
+const logger = require("./utils/logger");
 
 const startServer = async () => {
   try {
@@ -18,11 +19,10 @@ const startServer = async () => {
     app.set("io", io);
 
     server.listen(env.port, () => {
-      console.log(`OpportunityX API listening on port ${env.port}`);
-      console.log(`Environment: ${env.nodeEnv}`);
+      logger.info("server_started", { port: env.port, environment: env.nodeEnv });
     });
   } catch (error) {
-    console.error(`Server startup failed: ${error.message}`);
+    logger.error("server_startup_failed", { error });
     process.exit(1);
   }
 };

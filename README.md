@@ -38,7 +38,7 @@ npm run dev:backend
 npm run dev
 ```
 
-The recommended local API is `http://localhost:8000`; the frontend remains on Vite's configured port `8080`.
+The recommended local API is `http://localhost:8000`; the frontend remains on Vite's configured port `5173`.
 
 ## First Admin Bootstrap
 
@@ -79,5 +79,9 @@ The latest design pass also removes fake homepage testimonials/statistics, stren
 | `npm run lint` | Lint frontend |
 | `npm run test:backend` | Run backend tests |
 | `npm run install:all` | Install both applications |
+
+## Production Readiness
+
+Phase 11 hardening covers route/API alignment, protected route behavior, chat socket cleanup, global frontend error recovery, backend structured logging, upload filename hardening, dependency security updates, and final build/test validation. See [production readiness audit](docs/production-readiness-audit.md) for the route/API/security/performance validation report.
 
 See [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md), [architecture](docs/architecture.md), [API documentation](docs/api-documentation.md), and the [deployment guide](docs/deployment-guide.md).

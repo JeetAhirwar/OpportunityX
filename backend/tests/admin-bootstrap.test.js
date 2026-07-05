@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 
 process.env.MONGODB_URI ||= "mongodb://127.0.0.1:27017/opportunityx-test";
 process.env.JWT_SECRET ||= "test-only-secret";
-process.env.CORS_ORIGIN ||= "http://localhost:8080";
+process.env.CORS_ORIGIN ||= "http://localhost:5173";
 
 const userModelPath = require.resolve("../src/models/user.model");
 let fakeUser;
@@ -33,27 +33,32 @@ const {
 const createRes = () => ({
   statusCode: 200,
   body: null,
-  status(code) {
+  status(code)
+  {
     this.statusCode = code;
     return this;
   },
-  json(payload) {
+  json(payload)
+  {
     this.body = payload;
     return this;
   },
 });
 
-test("bootstrapAdmin creates the first admin with a valid code and safe response", async () => {
+test("bootstrapAdmin creates the first admin with a valid code and safe response", async () =>
+{
   process.env.ADMIN_REGISTRATION_CODE = "valid-bootstrap-code";
   let createdPayload;
 
   fakeUser = {
-    async findOne(query) {
+    async findOne(query)
+    {
       if (query.role === "admin") return null;
       if (query.email === "admin@opportunityx.com") return null;
       return null;
     },
-    async create(payload) {
+    async create(payload)
+    {
       createdPayload = payload;
       return {
         _id: "507f1f77bcf86cd799439011",
@@ -85,16 +90,19 @@ test("bootstrapAdmin creates the first admin with a valid code and safe response
   assert.equal(createdPayload.role, "admin");
 });
 
-test("bootstrapAdmin rejects invalid bootstrap codes", async () => {
+test("bootstrapAdmin rejects invalid bootstrap codes", async () =>
+{
   process.env.ADMIN_REGISTRATION_CODE = "valid-bootstrap-code";
   let createCalled = false;
 
   fakeUser = {
-    async findOne(query) {
+    async findOne(query)
+    {
       if (query.role === "admin") return null;
       return null;
     },
-    async create() {
+    async create()
+    {
       createCalled = true;
     },
   };
@@ -114,16 +122,19 @@ test("bootstrapAdmin rejects invalid bootstrap codes", async () => {
   assert.equal(createCalled, false);
 });
 
-test("bootstrapAdmin rejects second admin bootstrap attempts", async () => {
+test("bootstrapAdmin rejects second admin bootstrap attempts", async () =>
+{
   process.env.ADMIN_REGISTRATION_CODE = "valid-bootstrap-code";
   let createCalled = false;
 
   fakeUser = {
-    async findOne(query) {
+    async findOne(query)
+    {
       if (query.role === "admin") return { _id: "existing-admin" };
       return null;
     },
-    async create() {
+    async create()
+    {
       createCalled = true;
     },
   };
@@ -143,12 +154,14 @@ test("bootstrapAdmin rejects second admin bootstrap attempts", async () => {
   assert.equal(createCalled, false);
 });
 
-test("public register rejects admin role", async () => {
+test("public register rejects admin role", async () =>
+{
   const app = require("../src/app");
   const server = app.listen(0);
   await new Promise((resolve) => server.once("listening", resolve));
 
-  try {
+  try
+  {
     const { port } = server.address();
     const response = await fetch(`http://127.0.0.1:${port}/api/auth/register`, {
       method: "POST",
@@ -166,19 +179,23 @@ test("public register rejects admin role", async () => {
     assert.equal(body.success, false);
     assert.equal(body.message, "Validation failed");
     assert.equal(body.errors.some((error) => error.field === "role"), true);
-  } finally {
+  } finally
+  {
     await new Promise((resolve) => server.close(resolve));
   }
 });
 
-test("admin createUser creates an admin-managed user without password in response", async () => {
+test("admin createUser creates an admin-managed user without password in response", async () =>
+{
   let createdPayload;
   fakeUser = {
-    async findOne(query) {
+    async findOne(query)
+    {
       if (query.email === "secondadmin@opportunityx.com") return null;
       return null;
     },
-    async create(payload) {
+    async create(payload)
+    {
       createdPayload = payload;
       return {
         _id: "507f1f77bcf86cd799439012",
@@ -206,14 +223,17 @@ test("admin createUser creates an admin-managed user without password in respons
   assert.equal(res.body.data.user.password, undefined);
 });
 
-test("admin createUser rejects duplicate email", async () => {
+test("admin createUser rejects duplicate email", async () =>
+{
   let createCalled = false;
   fakeUser = {
-    async findOne(query) {
+    async findOne(query)
+    {
       if (query.email === "taken@opportunityx.com") return { _id: "existing-user" };
       return null;
     },
-    async create() {
+    async create()
+    {
       createCalled = true;
     },
   };
@@ -233,7 +253,8 @@ test("admin createUser rejects duplicate email", async () => {
   assert.equal(createCalled, false);
 });
 
-test("updateUserRole rejects demoting the last remaining admin", async () => {
+test("updateUserRole rejects demoting the last remaining admin", async () =>
+{
   let updateCalled = false;
   const target = {
     _id: "507f1f77bcf86cd799439011",
@@ -244,14 +265,17 @@ test("updateUserRole rejects demoting the last remaining admin", async () => {
   };
 
   fakeUser = {
-    findById() {
+    findById()
+    {
       return { select: async () => target };
     },
-    async countDocuments(query) {
+    async countDocuments(query)
+    {
       assert.deepEqual(query, { role: "admin" });
       return 1;
     },
-    findByIdAndUpdate() {
+    findByIdAndUpdate()
+    {
       updateCalled = true;
     },
   };
@@ -268,7 +292,8 @@ test("updateUserRole rejects demoting the last remaining admin", async () => {
   assert.equal(updateCalled, false);
 });
 
-test("updateUserRole requires confirm before self-demotion", async () => {
+test("updateUserRole requires confirm before self-demotion", async () =>
+{
   let countCalled = false;
   const target = {
     _id: "507f1f77bcf86cd799439011",
@@ -279,10 +304,12 @@ test("updateUserRole requires confirm before self-demotion", async () => {
   };
 
   fakeUser = {
-    findById() {
+    findById()
+    {
       return { select: async () => target };
     },
-    async countDocuments() {
+    async countDocuments()
+    {
       countCalled = true;
       return 2;
     },
@@ -300,7 +327,8 @@ test("updateUserRole requires confirm before self-demotion", async () => {
   assert.equal(countCalled, false);
 });
 
-test("updateUserStatus rejects suspending the last active admin", async () => {
+test("updateUserStatus rejects suspending the last active admin", async () =>
+{
   let updateCalled = false;
   const target = {
     _id: "507f1f77bcf86cd799439011",
@@ -311,14 +339,17 @@ test("updateUserStatus rejects suspending the last active admin", async () => {
   };
 
   fakeUser = {
-    findById() {
+    findById()
+    {
       return { select: async () => target };
     },
-    async countDocuments(query) {
+    async countDocuments(query)
+    {
       assert.deepEqual(query, { role: "admin" });
       return 1;
     },
-    findByIdAndUpdate() {
+    findByIdAndUpdate()
+    {
       updateCalled = true;
     },
   };
@@ -335,7 +366,8 @@ test("updateUserStatus rejects suspending the last active admin", async () => {
   assert.equal(updateCalled, false);
 });
 
-test("deleteUser rejects deleting the last remaining admin", async () => {
+test("deleteUser rejects deleting the last remaining admin", async () =>
+{
   let deleteCalled = false;
   const target = {
     _id: "507f1f77bcf86cd799439011",
@@ -346,14 +378,17 @@ test("deleteUser rejects deleting the last remaining admin", async () => {
   };
 
   fakeUser = {
-    findById() {
+    findById()
+    {
       return { select: async () => target };
     },
-    async countDocuments(query) {
+    async countDocuments(query)
+    {
       assert.deepEqual(query, { role: "admin" });
       return 1;
     },
-    async findByIdAndDelete() {
+    async findByIdAndDelete()
+    {
       deleteCalled = true;
     },
   };

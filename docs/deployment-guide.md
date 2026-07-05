@@ -17,6 +17,8 @@
 - Set `NODE_ENV=production`, `MONGODB_URI`, `JWT_SECRET`,
   `ACCESS_TOKEN_EXPIRY`, `CORS_ORIGIN`, `CLIENT_URL`, and
   `SOCKET_CORS_ORIGIN`.
+- Set `LOG_LEVEL=info` in production unless active debugging requires
+  `debug`. Logs are structured JSON and redact common secret fields.
 - Optional: set `OPENAI_API_KEY` and `AI_MODEL` to enable AI features.
 - Optional: set SMTP variables for password reset email delivery.
 
@@ -51,3 +53,5 @@ Do not use wildcard CORS with credentials in production.
 - Socket.IO connects with the deployed `VITE_SOCKET_URL`.
 - AI pages show unavailable states when `OPENAI_API_KEY` is absent.
 - Upload storage is durable before relying on resume/chat files in production.
+- `npm audit --prefix frontend --audit-level=moderate` reports zero vulnerabilities.
+- `npm audit --prefix backend --audit-level=moderate` reports zero vulnerabilities.

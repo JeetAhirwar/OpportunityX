@@ -25,7 +25,8 @@ Authorization: Bearer <jwt>
 | Applications | `GET /api/applications/me` | Candidate |
 | Applications | `GET /api/applications/job/:jobId` | Recruiter |
 | Candidate | `GET/PUT /api/candidate/profile` | Candidate |
-| Saved jobs | `GET/POST/DELETE /api/saved-jobs` | Candidate |
+| Saved jobs | `GET /api/saved-jobs` | Candidate |
+| Saved jobs | `POST /api/saved-jobs/:jobId` | Candidate toggle |
 | Notifications | `/api/notifications` | Authenticated |
 | Chat | `GET /api/chat/conversations` | Candidate or recruiter |
 | Chat | `POST /api/chat/conversations/start` | Application participant |
@@ -49,7 +50,8 @@ Authorization: Bearer <jwt>
 | Admin | `PATCH /api/admin/jobs/:id/moderate` | Admin |
 | Admin | `GET /api/admin/applications` | Admin |
 | Admin | `/api/admin/*` | Admin |
-| Public | `/api/public/*` | Public |
+| Public | `GET /api/public/profile/:username` | Public |
+| Public | `GET /api/public/jobs/:id` | Public |
 
 Validation errors use HTTP 400. Authentication failures use 401, role failures
 use 403, and missing routes use 404.
@@ -62,6 +64,10 @@ stored access token and returns the same safe user information.
 Password reset email delivery requires `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`,
 `SMTP_PASS`, and `EMAIL_FROM`. Replace example values with real credentials in
 production and never commit `.env`.
+
+Backend logs are emitted as structured JSON through `LOG_LEVEL`
+(`error`, `warn`, `info`, or `debug`). Common secret fields such as passwords,
+tokens, authorization headers, and cookies are redacted before logging.
 
 `POST /api/chat/conversations/start` accepts `{ "applicationId": "..." }`.
 Socket clients authenticate with `auth: { token }` and may use

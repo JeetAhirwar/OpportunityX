@@ -3,7 +3,8 @@ const dotenv = require("dotenv");
 
 dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
-const required = (name, legacyName) => {
+const required = (name, legacyName) =>
+{
   const value = process.env[name] || (legacyName && process.env[legacyName]);
   if (!value) throw new Error(`Missing required environment variable: ${name}`);
   return value;
@@ -15,11 +16,11 @@ module.exports = Object.freeze({
   mongodbUri: required("MONGODB_URI", "MONGO_URI"),
   jwtSecret: required("JWT_SECRET"),
   accessTokenExpiry: process.env.ACCESS_TOKEN_EXPIRY || "7d",
-  corsOrigins: (process.env.CORS_ORIGIN || "http://localhost:5173,http://localhost:8080")
+  corsOrigins: (process.env.CORS_ORIGIN || "http://localhost:5173,http://localhost:5173")
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean),
-  clientUrl: process.env.CLIENT_URL || "http://localhost:8080",
+  clientUrl: process.env.CLIENT_URL || "http://localhost:5173",
   smtp: Object.freeze({
     host: process.env.SMTP_HOST || "",
     port: Number(process.env.SMTP_PORT || 587),
@@ -42,7 +43,7 @@ module.exports = Object.freeze({
   openaiApiKey: /^replace_/i.test(process.env.OPENAI_API_KEY || "") ? "" : process.env.OPENAI_API_KEY || "",
   openaiModel: process.env.OPENAI_MODEL || "gpt-4.1-mini",
   aiModel: process.env.AI_MODEL || "gemini-1.5-flash",
-  socketCorsOrigins: (process.env.SOCKET_CORS_ORIGIN || process.env.CORS_ORIGIN || "http://localhost:8080")
+  socketCorsOrigins: (process.env.SOCKET_CORS_ORIGIN || process.env.CORS_ORIGIN || "http://localhost:5173")
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean),

@@ -1,0 +1,268 @@
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { ArrowLeft, ArrowRight, Eye, Loader2, Save, Send, Sparkles } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/hooks/use-toast";
+import PageHeader from "@/components/common/PageHeader";
+import api from "@/services/api";
+import { getCompanyProfile, getRecruiterJob } from "@/features/recruiter/recruiterApi";
+import { generateJobDescription } from "@/features/ai/aiApi";
+const steps = ["Job Details", "Requirements", "Compensation", "Preview"];
+const PostJob = () => {
+    const { toast } = useToast();
+    const navigate = useNavigate();
+    const { id } = useParams();
+    const isEditing = Boolean(id);
+    const [step, setStep] = useState(0);
+    const [loading, setLoading] = useState(isEditing);
+    const [saving, setSaving] = useState(false);
+    const [generating, setGenerating] = useState(false);
+    const [aiPreview, setAiPreview] = useState(null);
+    const [verificationStatus, setVerificationStatus] = useState("unverified");
+    const [form, setForm] = useState({
+        title: "", company: "", location: "", type: "full-time", workMode: "remote",
+        description: "", responsibilities: "", qualifications: "",
+        skills: [], newSkill: "",
+        salaryMin: "", salaryMax: "", currency: "USD", showSalary: true,
+        experience: "mid", deadline: "",
+    });
+    useEffect(() => {
+        void getCompanyProfile().then((company) => setVerificationStatus(company.verificationStatus)).catch(() => undefined);
+        if (!id)
+            return;
+        setLoading(true);
+        getRecruiterJob(id)
+            .then((job) => setForm({
+            title: job.title || "", company: job.company || "", location: job.location || "",
+            type: job.jobType || "full-time", workMode: job.workMode || "remote",
+            description: job.description || "", responsibilities: job.responsibilities || "",
+            qualifications: job.qualifications || "", skills: job.skills || [], newSkill: "",
+            salaryMin: String(job.salary?.min || ""), salaryMax: String(job.salary?.max || ""),
+            currency: job.salary?.currency || "USD", showSalary: true,
+            experience: job.experienceLevel || "mid",
+            deadline: job.deadline ? new Date(job.deadline).toISOString().slice(0, 10) : "",
+        }))
+            .catch((error) => toast({ title: "Could not load job", description: error instanceof Error ? error.message : "Unknown error", variant: "destructive" }))
+            .finally(() => setLoading(false));
+    }, [id, toast]);
+    const update = (key, value) => setForm((p) => ({ ...p, [key]: value }));
+    const addSkill = () => {
+        if (form.newSkill.trim() && !form.skills.includes(form.newSkill.trim())) {
+            update("skills", [...form.skills, form.newSkill.trim()]);
+            update("newSkill", "");
+        }
+    };
+    const handleSubmit = async (draft = false) => {
+        if (!draft && verificationStatus !== "verified") {
+            toast({ title: "Verification required", description: "Your recruiter account must be verified before publishing jobs.", variant: "destructive" });
+            return;
+        }
+        setSaving(true);
+        try {
+            const payload = {
+                title: form.title,
+                company: form.company,
+                location: form.location,
+                jobType: form.type,
+                workMode: form.workMode,
+                description: form.description,
+                responsibilities: form.responsibilities,
+                qualifications: form.qualifications,
+                skills: form.skills,
+                experienceLevel: form.experience,
+                deadline: form.deadline,
+                salary: {
+                    min: Number(form.salaryMin),
+                    max: Number(form.salaryMax),
+                    currency: form.currency,
+                },
+                status: draft ? "draft" : "active",
+            };
+            if (id)
+                await api.put(`/jobs/${id}`, payload);
+            else
+                await api.post("/jobs", payload);
+            toast({
+                title: draft ? "Draft saved" : isEditing ? "Job updated" : "Job posted",
+                description: draft
+                    ? "You can publish it later."
+                    : "Your job is now live.",
+            });
+            navigate("/recruiter/jobs");
+        }
+        catch (error) {
+            toast({
+                title: "Error",
+                description: error instanceof Error ? error.message : "Failed to save job",
+                variant: "destructive",
+            });
+        }
+        finally {
+            setSaving(false);
+        }
+    };
+    const handleGenerateDescription = async () => {
+        setGenerating(true);
+        setAiPreview(null);
+        try {
+            setAiPreview(await generateJobDescription({
+                title: form.title,
+                skills: form.skills,
+                experience: form.experience,
+                workMode: form.workMode,
+            }));
+        }
+        catch (requestError) {
+            toast({ title: "AI helper unavailable", description: requestError instanceof Error ? requestError.message : "Unknown error", variant: "destructive" });
+        }
+        finally {
+            setGenerating(false);
+        }
+    };
+    if (loading)
+        return <div className="p-6 text-sm text-muted-foreground">Loading job...</div>;
+    return (<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+      <PageHeader title={isEditing ? "Edit Job" : "Post a Job"} description={isEditing ? "Update your job listing" : "Create a new job listing"}/>
+      {verificationStatus !== "verified" && (<Card className="border-warning/40"><CardContent className="p-4 text-sm text-warning">Your company is {verificationStatus}. You can save drafts, but publishing requires verification.</CardContent></Card>)}
+
+      {/* Steps */}
+      <div className="flex items-center gap-2">
+        {steps.map((s, i) => (<div key={s} className="flex items-center gap-2">
+            <button onClick={() => setStep(i)} className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-colors ${i <= step ? "gradient-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>{i + 1}</button>
+            <span className={`hidden text-sm sm:inline ${i <= step ? "font-medium" : "text-muted-foreground"}`}>{s}</span>
+            {i < steps.length - 1 && <div className={`h-px w-8 ${i < step ? "bg-primary" : "bg-border"}`}/>}
+          </div>))}
+      </div>
+
+      {/* Step 1: Details */}
+      {step === 0 && (<Card>
+          <CardHeader><CardTitle className="text-lg">Job Details</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <div><Label>Job Title</Label><Input placeholder="e.g. Senior Frontend Engineer" value={form.title} onChange={(e) => update("title", e.target.value)}/></div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div><Label>Company</Label><Input placeholder="Company name" value={form.company} onChange={(e) => update("company", e.target.value)}/></div>
+              <div><Label>Location</Label><Input placeholder="City, Country" value={form.location} onChange={(e) => update("location", e.target.value)}/></div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div><Label>Job Type</Label>
+                <Select value={form.type} onValueChange={(v) => update("type", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="full-time">Full-time</SelectItem>
+                    <SelectItem value="part-time">Part-time</SelectItem>
+                    <SelectItem value="contract">Contract</SelectItem>
+                    <SelectItem value="internship">Internship</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div><Label>Work Mode</Label>
+                <Select value={form.workMode} onValueChange={(v) => update("workMode", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="remote">Remote</SelectItem>
+                    <SelectItem value="hybrid">Hybrid</SelectItem>
+                    <SelectItem value="onsite">On-site</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <div className="mb-1 flex items-center justify-between gap-2"><Label>Description</Label><Button type="button" variant="outline" size="sm" onClick={() => void handleGenerateDescription()} disabled={generating || !form.title.trim()}>{generating ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4"/>} Generate Description</Button></div>
+              <Textarea placeholder="Describe the role, team, and what makes this opportunity exciting..." value={form.description} onChange={(e) => update("description", e.target.value)} rows={5}/>
+            </div>
+            {aiPreview && <Card className="border-primary/30"><CardContent className="space-y-3 p-4 text-sm"><p className="font-medium">AI suggestion preview</p><p className="text-muted-foreground whitespace-pre-line">{aiPreview.description}</p><div className="flex gap-2"><Button size="sm" variant="outline" onClick={() => update("description", aiPreview.description)}>Insert Description</Button><Button size="sm" variant="outline" onClick={() => { update("responsibilities", aiPreview.responsibilities); update("qualifications", aiPreview.qualifications); }}>Insert Requirements</Button></div></CardContent></Card>}
+          </CardContent>
+        </Card>)}
+
+      {/* Step 2: Requirements */}
+      {step === 1 && (<Card>
+          <CardHeader><CardTitle className="text-lg">Requirements</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <div><Label>Responsibilities</Label><Textarea placeholder="List key responsibilities..." value={form.responsibilities} onChange={(e) => update("responsibilities", e.target.value)} rows={4}/></div>
+            <div><Label>Qualifications</Label><Textarea placeholder="List required qualifications..." value={form.qualifications} onChange={(e) => update("qualifications", e.target.value)} rows={4}/></div>
+            <div><Label>Experience Level</Label>
+              <Select value={form.experience} onValueChange={(v) => update("experience", v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="junior">Entry Level</SelectItem>
+                  <SelectItem value="mid">Mid Level</SelectItem>
+                  <SelectItem value="senior">Senior</SelectItem>
+                  <SelectItem value="lead">Lead / Principal</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Required Skills</Label>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {form.skills.map((s) => (<Badge key={s} variant="secondary" className="gap-1 pr-1">{s}<button onClick={() => update("skills", form.skills.filter((x) => x !== s))} className="ml-1 hover:text-destructive">×</button></Badge>))}
+              </div>
+              <div className="flex gap-2">
+                <Input placeholder="Add skill" value={form.newSkill} onChange={(e) => update("newSkill", e.target.value)} onKeyDown={(e) => e.key === "Enter" && addSkill()}/>
+                <Button variant="outline" onClick={addSkill}>Add</Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>)}
+
+      {/* Step 3: Compensation */}
+      {step === 2 && (<Card>
+          <CardHeader><CardTitle className="text-lg">Compensation</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div><Label>Min Salary</Label><Input type="number" placeholder="80000" value={form.salaryMin} onChange={(e) => update("salaryMin", e.target.value)}/></div>
+              <div><Label>Max Salary</Label><Input type="number" placeholder="120000" value={form.salaryMax} onChange={(e) => update("salaryMax", e.target.value)}/></div>
+              <div><Label>Currency</Label>
+                <Select value={form.currency} onValueChange={(v) => update("currency", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="USD">USD</SelectItem>
+                    <SelectItem value="EUR">EUR</SelectItem>
+                    <SelectItem value="GBP">GBP</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Switch checked={form.showSalary} onCheckedChange={(v) => update("showSalary", v)}/>
+              <Label>Display salary on listing</Label>
+            </div>
+            <div><Label>Application Deadline</Label><Input type="date" value={form.deadline} onChange={(e) => update("deadline", e.target.value)}/></div>
+          </CardContent>
+        </Card>)}
+
+      {/* Step 4: Preview */}
+      {step === 3 && (<Card>
+          <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Eye className="h-5 w-5"/> Preview</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <h2 className="font-display text-xl font-bold">{form.title || "Job Title"}</h2>
+            <p className="text-muted-foreground">{form.company || "Company"} · {form.location || "Location"} · {form.workMode} · {form.type}</p>
+            {form.showSalary && form.salaryMin && <p className="font-medium">{form.currency} {Number(form.salaryMin).toLocaleString()} - {Number(form.salaryMax).toLocaleString()}</p>}
+            {form.skills.length > 0 && <div className="flex flex-wrap gap-2">{form.skills.map((s) => <Badge key={s} variant="secondary">{s}</Badge>)}</div>}
+            {form.description && <div><h3 className="font-semibold mb-1">Description</h3><p className="text-sm text-muted-foreground whitespace-pre-line">{form.description}</p></div>}
+            {form.responsibilities && <div><h3 className="font-semibold mb-1">Responsibilities</h3><p className="text-sm text-muted-foreground whitespace-pre-line">{form.responsibilities}</p></div>}
+            {form.qualifications && <div><h3 className="font-semibold mb-1">Qualifications</h3><p className="text-sm text-muted-foreground whitespace-pre-line">{form.qualifications}</p></div>}
+          </CardContent>
+        </Card>)}
+
+      {/* Navigation */}
+      <div className="flex justify-between">
+        <Button variant="outline" onClick={() => setStep(Math.max(0, step - 1))} disabled={step === 0}>
+          <ArrowLeft className="mr-2 h-4 w-4"/> Back
+        </Button>
+        <div className="flex gap-2">
+          {step === 3 && <Button variant="outline" onClick={() => handleSubmit(true)} disabled={saving}><Save className="mr-2 h-4 w-4"/> Save Draft</Button>}
+          {step < 3 ? (<Button onClick={() => setStep(step + 1)} className="gradient-primary border-0">Next <ArrowRight className="ml-2 h-4 w-4"/></Button>) : (<Button onClick={() => handleSubmit(false)} disabled={saving || verificationStatus !== "verified"} className="gradient-primary border-0"><Send className="mr-2 h-4 w-4"/> {isEditing ? "Update & Publish" : "Publish Job"}</Button>)}
+        </div>
+      </div>
+    </motion.div>);
+};
+export default PostJob;
