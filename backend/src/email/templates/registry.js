@@ -96,7 +96,19 @@ const registry = new Map([
     subject: (data) => `Interview update for ${jobLabel(data)}`,
     title: "Interview updated",
     paragraphs: (data) => [`There is an update for your interview for ${jobLabel(data)}.`, data.interviewTime ? `Updated time: ${data.interviewTime}` : "Please check your application dashboard for the latest details."],
-    cta: () => ({ label: "Review update", url: absoluteClientUrl("/candidate/applied") }),
+    cta: () => ({ label: "Review update", url: absoluteClientUrl("/candidate/interviews") }),
+  })],
+  [EMAIL_TYPES.CANDIDATE_INTERVIEW_CANCELLED, template({
+    subject: (data) => `Interview cancelled for ${jobLabel(data)}`,
+    title: "Interview cancelled",
+    paragraphs: (data) => [`Your interview for ${jobLabel(data)} has been cancelled.`, "Check your interview dashboard for the latest status and recruiter updates."],
+    cta: () => ({ label: "View interviews", url: absoluteClientUrl("/candidate/interviews") }),
+  })],
+  [EMAIL_TYPES.CANDIDATE_INTERVIEW_REMINDER, template({
+    subject: (data) => `Reminder: ${data.interviewTitle || "Interview"} for ${jobLabel(data)}`,
+    title: "Interview reminder",
+    paragraphs: (data) => [`This is a reminder for your ${data.interviewTitle || "interview"} for ${jobLabel(data)}.`, data.interviewTime ? `Interview time: ${data.interviewTime}` : "Open OpportunityX for the interview details."],
+    cta: () => ({ label: "Open interview", url: absoluteClientUrl("/candidate/interviews") }),
   })],
   [EMAIL_TYPES.CANDIDATE_OFFER_LETTER, template({
     subject: (data) => `Offer update for ${jobLabel(data)}`,
@@ -153,6 +165,13 @@ const registry = new Map([
     title: "Job expired",
     paragraphs: (data) => [`Your job ${jobLabel(data)} has expired or closed.`, "You can update the job or publish a new opportunity when ready."],
     cta: () => ({ label: "Manage jobs", url: absoluteClientUrl("/recruiter/jobs") }),
+  })],
+  [EMAIL_TYPES.RECRUITER_INTERVIEW_FEEDBACK_RECEIVED, template({
+    subject: (data) => `Feedback received for ${data.interviewTitle || "an interview"}`,
+    title: "Interview feedback received",
+    paragraphs: (data) => [`Feedback was submitted for ${data.candidateName || "the candidate"} on ${data.interviewTitle || "an interview"}.`, "Review the interview score, recommendation, and comments from the recruiter interview workspace."],
+    details: (data) => [{ label: "Candidate", value: data.candidateName || "Candidate" }, { label: "Role", value: jobLabel(data) }],
+    cta: () => ({ label: "Review interviews", url: absoluteClientUrl("/recruiter/interviews") }),
   })],
 
   [EMAIL_TYPES.ADMIN_RECRUITER_APPROVAL_REQUIRED, template({

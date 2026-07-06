@@ -1,7 +1,7 @@
 import { Routes, Route, Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "@/store/AuthContext";
-import { LayoutDashboard, PlusCircle, Briefcase, Users, Building2, BarChart3, Settings, LogOut, Menu, X, MessageSquare, Bell, } from "lucide-react";
+import { LayoutDashboard, PlusCircle, Briefcase, Users, Building2, BarChart3, Settings, LogOut, Menu, X, MessageSquare, Bell, CalendarDays, } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import ManageJobs from "@/features/recruiter/ManageJobs";
 import ApplicantManagement from "@/features/recruiter/ApplicantManagement";
 import CompanyProfile from "@/features/recruiter/CompanyProfile";
 import RecruiterAnalytics from "@/features/recruiter/RecruiterAnalytics";
+import InterviewManagement from "@/features/recruiter/InterviewManagement";
 import ChatPage from "@/features/chat/ChatPage";
 import NotificationsPage from "@/features/notifications/NotificationsPage";
 import SettingsPage from "@/features/settings/SettingsPage";
@@ -24,6 +25,7 @@ const sidebarLinks = [
     { label: "Post Job", href: "/recruiter/post-job", icon: PlusCircle },
     { label: "Manage Jobs", href: "/recruiter/jobs", icon: Briefcase },
     { label: "Applicants", href: "/recruiter/applicants", icon: Users },
+    { label: "Interviews", href: "/recruiter/interviews", icon: CalendarDays },
     { label: "Company Profile", href: "/recruiter/company", icon: Building2 },
     { label: "Analytics", href: "/recruiter/analytics", icon: BarChart3 },
     { label: "Messages", href: "/recruiter/chat", icon: MessageSquare },
@@ -126,6 +128,7 @@ const RecruiterDashboard = () => {
               <Route path="jobs/:id/edit" element={<PostJob />}/>
               <Route path="applicants" element={<ApplicantManagement />}/>
               <Route path="applicants/:jobId" element={<ApplicantManagement />}/>
+              <Route path="interviews" element={<InterviewManagement />}/>
               <Route path="profile" element={<CompanyProfile />}/>
               <Route path="company" element={<CompanyProfile />}/>
               <Route path="analytics" element={<RecruiterAnalytics />}/>

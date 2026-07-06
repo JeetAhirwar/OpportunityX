@@ -21,6 +21,8 @@ const EMAIL_TYPES = Object.freeze({
   CANDIDATE_SHORTLISTED: "candidate.shortlisted",
   CANDIDATE_INTERVIEW_SCHEDULED: "candidate.interviewScheduled",
   CANDIDATE_INTERVIEW_UPDATED: "candidate.interviewUpdated",
+  CANDIDATE_INTERVIEW_CANCELLED: "candidate.interviewCancelled",
+  CANDIDATE_INTERVIEW_REMINDER: "candidate.interviewReminder",
   CANDIDATE_OFFER_LETTER: "candidate.offerLetter",
   CANDIDATE_REJECTED: "candidate.rejected",
   CANDIDATE_PROFILE_APPROVED: "candidate.profileApproved",
@@ -31,6 +33,7 @@ const EMAIL_TYPES = Object.freeze({
   RECRUITER_NEW_APPLICATION_RECEIVED: "recruiter.newApplicationReceived",
   RECRUITER_JOB_PUBLISHED: "recruiter.jobPublished",
   RECRUITER_JOB_EXPIRED: "recruiter.jobExpired",
+  RECRUITER_INTERVIEW_FEEDBACK_RECEIVED: "recruiter.interviewFeedbackReceived",
 
   ADMIN_RECRUITER_APPROVAL_REQUIRED: "admin.recruiterApprovalRequired",
   ADMIN_NEW_RECRUITER_REGISTERED: "admin.newRecruiterRegistered",

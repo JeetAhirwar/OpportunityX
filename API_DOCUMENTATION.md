@@ -96,6 +96,36 @@ Implemented notification types include `application_submitted`,
 `admin_announcement`, `recruiter_registered`, `recruiter_approval_pending`,
 `abuse_report`, `failed_upload`, and `system_alert`.
 
+## Interviews
+
+Interview endpoints are mounted at `/api/interviews` and require authentication.
+Recruiters can manage only interviews for their own jobs, candidates can access
+only their own interviews, and admins can access all interviews.
+
+- `GET /api/interviews?page=1&limit=20&status=scheduled&today=true` lists
+  accessible interviews.
+- `POST /api/interviews` schedules an interview with `applicationId`,
+  `candidateId`, `jobId`, `title`, `description`, `stage`, `customStage`,
+  `mode`, `meetingLink`, `location`, `scheduledAt`, `duration`, `timezone`,
+  and `interviewers`.
+- `GET /api/interviews/:id` returns one accessible interview.
+- `PUT /api/interviews/:id` updates interview details.
+- `POST /api/interviews/:id/reschedule` marks an interview rescheduled.
+- `POST /api/interviews/:id/cancel` cancels an interview.
+- `POST /api/interviews/:id/duplicate` creates a copy.
+- `POST /api/interviews/:id/respond` lets candidates accept or request
+  reschedule.
+- `POST /api/interviews/:id/feedback` stores technical, communication,
+  problem-solving, culture-fit, comments, and recommendation feedback.
+- `GET /api/interviews/:id/calendar.ics` downloads an ICS invite.
+- `GET /api/interviews/analytics` returns recruiter/admin interview metrics.
+- `GET /api/interviews/calendar/providers` returns modular calendar adapter
+  capabilities.
+
+Socket.IO personal rooms receive `interview_scheduled`, `interview_updated`,
+`interview_rescheduled`, `interview_cancelled`, and
+`interview_feedback_received`.
+
 ## AI
 
 All AI endpoints require authentication, role authorization, backend-only

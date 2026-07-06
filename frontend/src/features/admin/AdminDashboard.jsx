@@ -1,7 +1,7 @@
 import { Routes, Route, Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "@/store/AuthContext";
-import { LayoutDashboard, Users, Briefcase, BarChart3, FileText, Settings, LogOut, Menu, X, UserCheck, Bell, } from "lucide-react";
+import { LayoutDashboard, Users, Briefcase, BarChart3, FileText, Settings, LogOut, Menu, X, UserCheck, Bell, CalendarDays, } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Navbar from "@/components/common/Navbar";
@@ -13,6 +13,7 @@ import SettingsPage from "@/features/settings/SettingsPage";
 import NotificationsPage from "@/features/notifications/NotificationsPage";
 import AdminApplications from "@/features/admin/AdminApplications";
 import AdminReports from "@/features/admin/AdminReports";
+import AdminInterviews from "@/features/admin/AdminInterviews";
 import NotFound from "@/pages/NotFound";
 import { useEffect, useState } from "react";
 import { getAdminAnalytics } from "@/features/admin/adminApi";
@@ -22,6 +23,7 @@ const sidebarLinks = [
     { label: "Recruiter Approval", href: "/admin/approvals", icon: UserCheck },
     { label: "Job Moderation", href: "/admin/jobs", icon: Briefcase },
     { label: "Applications", href: "/admin/applications", icon: FileText },
+    { label: "Interviews", href: "/admin/interviews", icon: CalendarDays },
     { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
     { label: "Reports", href: "/admin/reports", icon: FileText },
     { label: "Notifications", href: "/admin/notifications", icon: Bell },
@@ -101,6 +103,7 @@ const AdminDashboard = () => {
               <Route path="approvals" element={<RecruiterApproval />}/>
               <Route path="jobs" element={<JobModeration />}/>
               <Route path="applications" element={<AdminApplications />}/>
+              <Route path="interviews" element={<AdminInterviews />}/>
               <Route path="analytics" element={<PlatformAnalytics />}/>
               <Route path="reports" element={<AdminReports />}/>
               <Route path="profile" element={<SettingsPage />}/>

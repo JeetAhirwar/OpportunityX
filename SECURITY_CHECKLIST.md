@@ -11,6 +11,10 @@
 - Parsed resume raw text is excluded from default MongoDB reads.
 - AI routes are rate limited.
 - Chat routes enforce conversation membership before room joins/actions.
+- Interview routes enforce recruiter ownership, candidate self-access, and
+  admin full access.
+- Calendar export requires the same interview access checks as interview
+  details.
 - Admin user actions block self-suspension, self-role-change, and self-delete.
 - Production must use strong `JWT_SECRET`, exact CORS origins, and MongoDB
   Atlas network restrictions.

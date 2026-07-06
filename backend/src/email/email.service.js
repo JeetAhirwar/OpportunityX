@@ -83,6 +83,10 @@ const validateTemplates = () => listTemplates().map((type) => {
     verifyUrl: `${env.clientUrl}/verify-email/preview-token`,
     alertTitle: "SMTP delivery failure",
     alertMessage: "Email provider health check failed.",
+    interviewTitle: "Technical interview",
+    interviewTime: "July 7, 2026, 10:00 AM",
+    meetingLink: "https://meet.example.com/opportunityx",
+    mode: "google_meet",
   });
   return {
     type,

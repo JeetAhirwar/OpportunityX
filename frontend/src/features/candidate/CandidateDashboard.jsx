@@ -1,7 +1,7 @@
 import { Routes, Route, Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "@/store/AuthContext";
-import { LayoutDashboard, User, FileText, Briefcase, Bookmark, Bell, Brain, Settings, LogOut, Menu, X, MessageSquare, Loader2, } from "lucide-react";
+import { LayoutDashboard, User, FileText, Briefcase, Bookmark, Bell, Brain, Settings, LogOut, Menu, X, MessageSquare, Loader2, CalendarDays, } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,7 @@ import MyApplications from "@/features/candidate/MyApplications";
 import JobRecommendations from "@/features/candidate/JobRecommendations";
 import CandidateAIAssistant from "@/features/ai/CandidateAIAssistant";
 import JobAlerts from "@/features/candidate/JobAlerts";
+import CandidateInterviews from "@/features/candidate/CandidateInterviews";
 import ChatPage from "@/features/chat/ChatPage";
 import NotificationsPage from "@/features/notifications/NotificationsPage";
 import SettingsPage from "@/features/settings/SettingsPage";
@@ -29,6 +30,7 @@ const sidebarLinks = [
     { label: "Profile", href: "/candidate/profile", icon: User },
     { label: "Resume", href: "/candidate/resume", icon: FileText },
     { label: "Applied Jobs", href: "/candidate/applied", icon: Briefcase },
+    { label: "Interviews", href: "/candidate/interviews", icon: CalendarDays },
     { label: "Saved Jobs", href: "/candidate/saved", icon: Bookmark },
     { label: "Job Alerts", href: "/candidate/alerts", icon: Bell },
     { label: "AI Recommendations", href: "/candidate/recommendations", icon: Brain },
@@ -188,6 +190,7 @@ const CandidateDashboard = () => {
                 <Route path="profile" element={<ProfileBuilder />}/>
                 <Route path="resume" element={<ResumeUpload />}/>
                 <Route path="applied" element={<MyApplications />}/>
+                <Route path="interviews" element={<CandidateInterviews />}/>
                 <Route path="saved" element={<SavedJobs />}/>
                 <Route path="alerts" element={<JobAlerts />}/>
                 <Route path="recommendations" element={<JobRecommendations />}/>

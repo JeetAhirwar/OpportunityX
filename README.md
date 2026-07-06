@@ -64,6 +64,12 @@ Notifications are persisted in MongoDB, delivered in real time over Socket.IO pe
 
 Supported events include application submission/view/status changes, interview/offer/rejection updates, candidate withdrawal, candidate/recruiter messages, recruiter registration and verification review, job moderation, account updates, failed uploads, and system/admin alert types.
 
+## Interview Management
+
+OpportunityX includes an enterprise interview lifecycle module for HR, technical, managerial, behavioral, final, and custom interviews. Recruiters can schedule, reschedule, cancel, duplicate, score, and collect feedback for interviews with interview modes, duration, timezone, meeting links, notifications, email updates, Socket.IO events, and ICS calendar export.
+
+Candidates can view upcoming interviews, accept invitations, request reschedules, open meeting links, download calendar invites, and review interview history. Admins have platform-wide interview oversight.
+
 ## Enterprise Email Automation
 
 Email automation is provider-neutral and currently uses Nodemailer through SMTP. Candidate, recruiter, admin, and auth emails share branded responsive templates, a registry, safe HTML escaping, queue abstraction, retry support, and admin-only preview/validation endpoints.

@@ -24,6 +24,17 @@ Authorization: Bearer <jwt>
 | Applications | `POST /api/applications/:jobId/apply` | Candidate |
 | Applications | `GET /api/applications/me` | Candidate |
 | Applications | `GET /api/applications/job/:jobId` | Recruiter |
+| Interviews | `GET /api/interviews` | Candidate, recruiter, admin scoped |
+| Interviews | `POST /api/interviews` | Recruiter or admin |
+| Interviews | `GET /api/interviews/:id` | Participant or admin |
+| Interviews | `PUT /api/interviews/:id` | Recruiter or admin |
+| Interviews | `POST /api/interviews/:id/reschedule` | Recruiter or admin |
+| Interviews | `POST /api/interviews/:id/cancel` | Recruiter or admin |
+| Interviews | `POST /api/interviews/:id/duplicate` | Recruiter or admin |
+| Interviews | `POST /api/interviews/:id/respond` | Candidate |
+| Interviews | `POST /api/interviews/:id/feedback` | Recruiter or admin |
+| Interviews | `GET /api/interviews/:id/calendar.ics` | Participant or admin |
+| Interviews | `GET /api/interviews/analytics` | Recruiter or admin |
 | Candidate | `GET/PUT /api/candidate/profile` | Candidate |
 | Saved jobs | `GET /api/saved-jobs` | Candidate |
 | Saved jobs | `POST /api/saved-jobs/:jobId` | Candidate toggle |
@@ -108,3 +119,9 @@ Candidate profile upload accepts PDF and DOCX resumes up to 10 MB. Resume text
 is extracted and stored server-side in `ParsedResume`; AI endpoints return ATS
 analysis, parsed resume facts, job recommendations, recruiter match scoring,
 and admin hiring intelligence through the backend provider fallback system.
+
+Interview management supports schedule, reschedule, cancel, duplicate,
+candidate response, feedback scoring, recruiter/admin analytics, Socket.IO
+interview events, notification delivery, email templates, and ICS calendar
+export. Google and Outlook calendar adapters are represented in the calendar
+service and remain disabled until external credentials/integration are added.
