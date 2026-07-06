@@ -10,11 +10,15 @@ import { getAiJobRecommendations } from "@/features/ai/aiApi";
 import { Link } from "react-router-dom";
 const JobRecommendations = () => {
     const [recommendations, setRecommendations] = useState([]);
+    const [guidance, setGuidance] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     useEffect(() => {
         getAiJobRecommendations()
-            .then((response) => setRecommendations(response.recommendations))
+            .then((response) => {
+            setRecommendations(response.recommendations || []);
+            setGuidance(response);
+        })
             .catch((requestError) => setError(requestError instanceof Error ? requestError.message : "AI recommendations are unavailable."))
             .finally(() => setLoading(false));
     }, []);
@@ -72,6 +76,14 @@ const JobRecommendations = () => {
         </Card>);
             })}
     </div>}
+    {guidance && !error && <Card>
+      <CardContent className="grid gap-4 p-5 md:grid-cols-2">
+        <div><p className="font-medium">Skill Gaps</p><p className="mt-1 text-sm text-muted-foreground">{guidance.skillGapSuggestions?.join(", ") || "No skill gaps returned"}</p></div>
+        <div><p className="font-medium">Learning Path</p><p className="mt-1 text-sm text-muted-foreground">{guidance.learningPathSuggestions?.join(", ") || "No learning path returned"}</p></div>
+        <div><p className="font-medium">Resume Tips</p><p className="mt-1 text-sm text-muted-foreground">{guidance.resumeImprovementTips?.join(", ") || "No resume tips returned"}</p></div>
+        <div><p className="font-medium">Career Roadmap</p><p className="mt-1 text-sm text-muted-foreground">{guidance.careerRoadmap?.join(", ") || "No roadmap returned"}</p></div>
+      </CardContent>
+    </Card>}
   </motion.div>);
 };
 export default JobRecommendations;

@@ -14,6 +14,13 @@ Provider files live in `backend/src/services`:
 
 - `ai.service.js` orchestrates provider priority, fallback, sanitization, JSON
   cleanup, and normalized responses.
+- `resume-parser.service.js` extracts backend-only resume text from PDF and
+  DOCX files and derives basic structured resume facts.
+- `ai.resume.service.js` stores parsed resumes and produces ATS/resume analysis.
+- `ai.match.service.js` compares candidate resume/profile data with jobs.
+- `ai.scoring.service.js` produces aggregate admin hiring intelligence inputs.
+- `ai.response-normalizer.js` clamps scores and normalizes provider JSON into
+  stable API shapes.
 - `ai.gemini.provider.js`
 - `ai.openrouter.provider.js`
 - `ai.groq.provider.js`
@@ -87,6 +94,7 @@ Existing route paths are preserved:
 
 - `POST /api/ai/career-assistant`
 - `POST /api/ai/resume-analyze`
+- `GET /api/ai/resume/parsed`
 - `GET /api/ai/job-recommendations`
 - `POST /api/ai/recruiter/job-description`
 - `POST /api/ai/recruiter/interview-questions`
@@ -101,14 +109,16 @@ Existing route paths are preserved:
   key patterns.
 - Passwords, reset tokens, private chat history, and full private
   conversations are not sent to providers.
+- Resume text is sanitized and limited before AI calls. Stored raw resume text
+  is excluded from default MongoDB query selection.
 - Candidate match prompts use minimized profile/job fields and are advisory
   only.
 - Logs include provider name and failure category only, not prompts or secrets.
 
 ## Limitations
 
-- Resume PDF text extraction is not implemented yet; analysis uses profile
-  metadata and any submitted text.
+- PDF and DOCX text extraction quality depends on the uploaded file structure.
+  Scanned image resumes still need OCR before text can be extracted.
 - Provider JSON mode support varies. OpportunityX requests JSON when possible,
   safely cleans common markdown-fenced JSON, and falls back to structured
   defaults if parsing fails.

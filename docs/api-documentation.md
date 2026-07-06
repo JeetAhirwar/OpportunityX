@@ -33,6 +33,15 @@ Authorization: Bearer <jwt>
 | Notifications | `PATCH /api/notifications/read-all` | Owner |
 | Notifications | `DELETE /api/notifications/:id` | Owner |
 | Notifications | `DELETE /api/notifications/clear` | Owner |
+| AI | `POST /api/ai/career-assistant` | Candidate |
+| AI | `POST /api/ai/resume-analyze` | Candidate |
+| AI | `GET /api/ai/resume/parsed` | Candidate |
+| AI | `GET /api/ai/job-recommendations` | Candidate |
+| AI | `POST /api/ai/recruiter/job-description` | Recruiter |
+| AI | `POST /api/ai/recruiter/interview-questions` | Recruiter |
+| AI | `POST /api/ai/recruiter/candidate-summary` | Recruiter |
+| AI | `GET /api/ai/recruiter/applications/:applicationId/match-score` | Recruiter |
+| AI | `GET /api/ai/admin/insights` | Admin |
 | Chat | `GET /api/chat/conversations` | Candidate or recruiter |
 | Chat | `POST /api/chat/conversations/start` | Application participant |
 | Chat | `GET /api/chat/messages/:conversationId` | Conversation participant |
@@ -94,3 +103,8 @@ Notification sockets are delivered to the authenticated user's personal room.
 The server emits `notification_created`, `notification_received`, and
 `notifications_unread_count` so multiple browser tabs stay synchronized after
 create, read, read-all, delete, and clear actions.
+
+Candidate profile upload accepts PDF and DOCX resumes up to 10 MB. Resume text
+is extracted and stored server-side in `ParsedResume`; AI endpoints return ATS
+analysis, parsed resume facts, job recommendations, recruiter match scoring,
+and admin hiring intelligence through the backend provider fallback system.

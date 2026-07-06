@@ -37,7 +37,16 @@ const tagSuggestions = ["frontend", "backend", "react", "urgent", "experienced",
 
 export const normalizeApplicants = (response) => {
   const root = asRecord(response);
-  const source = Array.isArray(response) ? response : Array.isArray(root.applications) ? root.applications : [];
+  const nested = asRecord(root.data);
+  const source = Array.isArray(response)
+    ? response
+    : Array.isArray(root.applications)
+      ? root.applications
+      : Array.isArray(root.data)
+        ? root.data
+        : Array.isArray(nested.applications)
+          ? nested.applications
+          : [];
   return source.map((entry, index) => {
     const application = asRecord(entry);
     const candidate = asRecord(application.candidate);
@@ -461,12 +470,20 @@ const ApplicantManagement = () => {
       {match && <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 p-4" onClick={() => setMatch(null)}>
         <Card className="w-full max-w-lg" onClick={(event) => event.stopPropagation()}>
           <CardContent className="space-y-4 p-5">
-            <div><p className="text-sm text-muted-foreground">AI advisory match</p><h3 className="font-display text-xl font-bold">{match.applicant.candidate.name}: {match.score.score}/100</h3></div>
-            <p className="text-sm text-muted-foreground">{match.score.explanation}</p>
+            <div><p className="text-sm text-muted-foreground">AI advisory match</p><h3 className="font-display text-xl font-bold">{match.applicant.candidate.name}: {match.score.matchScore ?? match.score.score}/100</h3></div>
+            <p className="text-sm text-muted-foreground">{match.score.screeningSummary || match.score.recommendationReason || match.score.explanation}</p>
             <div className="grid gap-3 sm:grid-cols-2">
               <div><p className="text-sm font-medium">Matched skills</p><p className="text-sm text-muted-foreground">{match.score.matchedSkills?.join(", ") || "None listed"}</p></div>
               <div><p className="text-sm font-medium">Missing skills</p><p className="text-sm text-muted-foreground">{match.score.missingSkills?.join(", ") || "None listed"}</p></div>
+              <div><p className="text-sm font-medium">Skill match</p><p className="text-sm text-muted-foreground">{match.score.skillMatch ?? 0}/100</p></div>
+              <div><p className="text-sm font-medium">Resume quality</p><p className="text-sm text-muted-foreground">{match.score.resumeQuality ?? 0}/100</p></div>
+              <div><p className="text-sm font-medium">Experience match</p><p className="text-sm text-muted-foreground">{match.score.experienceMatch || "Not returned"}</p></div>
+              <div><p className="text-sm font-medium">Education match</p><p className="text-sm text-muted-foreground">{match.score.educationMatch || "Not returned"}</p></div>
+              <div><p className="text-sm font-medium">Salary fit</p><p className="text-sm text-muted-foreground">{match.score.salaryFit || "Not returned"}</p></div>
+              <div><p className="text-sm font-medium">Location fit</p><p className="text-sm text-muted-foreground">{match.score.locationFit || "Not returned"}</p></div>
             </div>
+            {!!match.score.riskFlags?.length && <div><p className="text-sm font-medium">Risk flags</p><p className="text-sm text-muted-foreground">{match.score.riskFlags.join(", ")}</p></div>}
+            {!!match.score.suggestedInterviewQuestions?.length && <div><p className="text-sm font-medium">Suggested interview questions</p><ul className="mt-1 list-disc pl-5 text-sm text-muted-foreground">{match.score.suggestedInterviewQuestions.map((item) => <li key={item}>{item}</li>)}</ul></div>}
             <Button className="w-full" variant="outline" onClick={() => setMatch(null)}>Close</Button>
           </CardContent>
         </Card>

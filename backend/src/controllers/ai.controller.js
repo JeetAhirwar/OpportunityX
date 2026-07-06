@@ -6,6 +6,10 @@ const SavedJob = require("../models/saved-job.model");
 const User = require("../models/user.model");
 const Company = require("../models/company.model");
 const { callProvider, jsonPrompt, sanitizeText } = require("../services/ai.service");
+const { ensureParsedResume, getParsedResume, analyzeResume: analyzeResumeService } = require("../services/ai.resume.service");
+const { compareCandidateToJob } = require("../services/ai.match.service");
+const { getAdminHiringIntelligence } = require("../services/ai.scoring.service");
+const { normalizeCandidateRecommendations } = require("../services/ai.response-normalizer");
 
 const fail = (res, error) =>
   res.status(error.statusCode || 500).json({ success: false, message: error.message || "AI request failed" });
@@ -21,25 +25,18 @@ const unavailableResponse = (res, result) =>
 
 const candidateProfile = (userId) => Profile.findOne({ user: userId }).lean();
 
-const scoreSkills = (jobSkills = [], profileSkills = []) => {
-  const profileSet = new Set(profileSkills.map((skill) => String(skill).toLowerCase()));
-  const normalizedJobSkills = jobSkills.map((skill) => String(skill).toLowerCase()).filter(Boolean);
-  const matchedSkills = normalizedJobSkills.filter((skill) => profileSet.has(skill));
-  const missingSkills = normalizedJobSkills.filter((skill) => !profileSet.has(skill));
-  const score = normalizedJobSkills.length ? Math.round((matchedSkills.length / normalizedJobSkills.length) * 100) : 40;
-  return { score, matchedSkills, missingSkills };
-};
-
 exports.careerAssistant = async (req, res) => {
   try {
     const message = sanitizeText(req.body.message, 2000);
     if (!message) return res.status(400).json({ success: false, message: "message is required" });
     const profile = await candidateProfile(req.user._id);
+    const parsedResume = await getParsedResume(req.user._id);
     const result = await jsonPrompt(
       `Candidate profile: ${JSON.stringify({
         title: profile?.title,
-        skills: profile?.skills,
+        skills: [...new Set([...(profile?.skills || []), ...(parsedResume?.skills || [])])],
         experience: profile?.experience,
+        resumeSummary: parsedResume?.parsedData?.summary,
         preferences: {
           jobTypes: profile?.preferredJobTypes,
           workModes: profile?.preferredWorkModes,
@@ -61,30 +58,52 @@ exports.resumeAnalyze = async (req, res) => {
     if (!profile?.resumeUrl && !req.body.resumeText) {
       return res.status(400).json({ success: false, message: "Upload a resume before requesting analysis." });
     }
-    const result = await jsonPrompt(
-      `Analyze this candidate resume/profile. PDF text extraction may be unavailable; use provided text and profile metadata only.\nResume text: ${sanitizeText(req.body.resumeText)}\nProfile: ${JSON.stringify({
-        title: profile?.title,
-        bio: profile?.bio,
-        skills: profile?.skills,
-        education: profile?.education,
-        experience: profile?.experience,
-        projects: profile?.projects,
-        certifications: profile?.certifications,
-        resumeUrl: profile?.resumeUrl ? "uploaded" : "missing",
-      })}\nReturn {"resumeScore":0,"strengths":[],"weaknesses":[],"missingSkills":[],"atsSuggestions":[],"improvedSummary":"","projectSuggestions":[],"limitations":[]}.`,
-      (text) => ({
-        resumeScore: 0,
-        strengths: [],
-        weaknesses: [],
-        missingSkills: [],
-        atsSuggestions: [text],
-        improvedSummary: "",
-        projectSuggestions: [],
-        limitations: ["Structured JSON was not returned by the AI provider."],
-      })
-    );
+    const [parsedResume, targetJob] = await Promise.all([
+      ensureParsedResume({ candidateId: req.user._id, profile }),
+      req.body.jobId && mongoose.isValidObjectId(req.body.jobId) ? Job.findById(req.body.jobId).lean() : null,
+    ]);
+    const result = await analyzeResumeService({ profile, parsedResume, resumeText: req.body.resumeText, targetJob });
     if (result.unavailable) return unavailableResponse(res, result);
-    res.json({ success: true, data: { ...result, limitations: [...(result.limitations || []), "PDF text extraction is not implemented yet; analysis uses profile metadata and any submitted resume text."] } });
+    res.json({
+      success: true,
+      data: {
+        ...result,
+        parsedResume: parsedResume
+          ? {
+              parsedData: parsedResume.parsedData,
+              skills: parsedResume.skills,
+              experienceYears: parsedResume.experienceYears,
+              techStack: parsedResume.techStack,
+              lastAnalyzedAt: parsedResume.lastAnalyzedAt,
+            }
+          : null,
+      },
+    });
+  } catch (error) {
+    fail(res, error);
+  }
+};
+
+exports.parsedResume = async (req, res) => {
+  try {
+    const profile = await candidateProfile(req.user._id);
+    const parsedResume = await ensureParsedResume({ candidateId: req.user._id, profile });
+    if (!parsedResume) return res.status(404).json({ success: false, message: "Parsed resume not found. Upload a PDF or DOCX resume first." });
+    res.json({
+      success: true,
+      data: {
+        resumeUrl: parsedResume.resumeUrl,
+        parsedData: parsedResume.parsedData,
+        atsScore: parsedResume.atsScore,
+        skills: parsedResume.skills,
+        techStack: parsedResume.techStack,
+        experienceYears: parsedResume.experienceYears,
+        education: parsedResume.education,
+        projects: parsedResume.projects,
+        certifications: parsedResume.certifications,
+        lastAnalyzedAt: parsedResume.lastAnalyzedAt,
+      },
+    });
   } catch (error) {
     fail(res, error);
   }
@@ -96,25 +115,46 @@ exports.jobRecommendations = async (req, res) => {
     if (!profile?.skills?.length) {
       return res.status(400).json({ success: false, message: "Complete your profile skills before requesting AI recommendations." });
     }
-    const [jobs, saved, applications] = await Promise.all([
+    const [jobs, saved, applications, parsedResume] = await Promise.all([
       Job.find({ status: "active" }).sort({ createdAt: -1 }).limit(40).lean(),
       SavedJob.find({ user: req.user._id }).select("job").lean(),
       Application.find({ candidate: req.user._id }).select("job").lean(),
+      getParsedResume(req.user._id),
     ]);
     const excluded = new Set([...saved, ...applications].map((item) => String(item.job)));
     const candidates = jobs.filter((job) => !excluded.has(String(job._id))).slice(0, 12);
-    const compactJobs = candidates.map((job) => ({ id: job._id, title: job.title, company: job.company, location: job.location, skills: job.skills, jobType: job.jobType, workMode: job.workMode }));
+    const compactJobs = candidates.map((job) => ({
+      id: job._id,
+      title: job.title,
+      company: job.company,
+      location: job.location,
+      skills: job.skills,
+      salary: job.salary,
+      jobType: job.jobType,
+      workMode: job.workMode,
+      experienceLevel: job.experienceLevel,
+    }));
     const result = await jsonPrompt(
-      `Candidate skills/preferences: ${JSON.stringify({ skills: profile.skills, title: profile.title, preferredJobTypes: profile.preferredJobTypes, preferredWorkModes: profile.preferredWorkModes, preferredIndustries: profile.preferredIndustries })}\nJobs: ${JSON.stringify(compactJobs)}\nReturn {"recommendations":[{"jobId":"...","matchScore":0,"reason":"...","missingSkills":[]}]}.`,
-      () => ({ recommendations: [] })
+      `Candidate skills/preferences/resume: ${JSON.stringify({
+        skills: [...new Set([...(profile.skills || []), ...(parsedResume?.skills || [])])],
+        title: profile.title,
+        expectedSalaryMin: profile.expectedSalaryMin,
+        preferredJobTypes: profile.preferredJobTypes,
+        preferredWorkModes: profile.preferredWorkModes,
+        preferredIndustries: profile.preferredIndustries,
+        parsedResume: parsedResume?.parsedData,
+        techStack: parsedResume?.techStack,
+      })}\nJobs: ${JSON.stringify(compactJobs)}\nReturn {"recommendations":[{"jobId":"...","matchScore":0,"reason":"...","missingSkills":[]}],"skillGapSuggestions":[],"learningPathSuggestions":[],"resumeImprovementTips":[],"careerRoadmap":[]}.`,
+      () => ({ recommendations: [], skillGapSuggestions: [], learningPathSuggestions: [], resumeImprovementTips: [], careerRoadmap: [] })
     );
     if (result.unavailable) return unavailableResponse(res, result);
+    const normalized = normalizeCandidateRecommendations(result);
     const byId = new Map(candidates.map((job) => [String(job._id), job]));
-    const recommendations = (result.recommendations || [])
+    const recommendations = (normalized.recommendations || [])
       .map((item) => ({ ...item, job: byId.get(String(item.jobId)) }))
       .filter((item) => item.job)
       .slice(0, 8);
-    res.json({ success: true, data: { recommendations } });
+    res.json({ success: true, data: { ...normalized, recommendations } });
   } catch (error) {
     fail(res, error);
   }
@@ -173,12 +213,11 @@ exports.matchScore = async (req, res) => {
     if (!application || String(application.job?.postedBy) !== String(req.user._id)) {
       return res.status(404).json({ success: false, message: "Application not found" });
     }
-    const profile = await Profile.findOne({ user: application.candidate._id }).lean();
-    const base = scoreSkills(application.job.skills, profile?.skills || []);
-    const result = await jsonPrompt(
-      `Explain candidate match. Job: ${JSON.stringify({ title: application.job.title, skills: application.job.skills, description: application.job.description, qualifications: application.job.qualifications })}\nCandidate: ${JSON.stringify({ name: application.candidate.name, skills: profile?.skills, title: profile?.title, experience: profile?.experience, projects: profile?.projects })}\nBase skill score: ${base.score}. Return {"score":0,"matchedSkills":[],"missingSkills":[],"explanation":"","riskFlags":[]}.`,
-      () => ({ ...base, explanation: "Score is based on overlapping skills.", riskFlags: [] })
-    );
+    const [profile, parsedResume] = await Promise.all([
+      Profile.findOne({ user: application.candidate._id }).lean(),
+      getParsedResume(application.candidate._id, true),
+    ]);
+    const result = await compareCandidateToJob({ job: application.job, profile, parsedResume, application });
     if (result.unavailable) return unavailableResponse(res, result);
     res.json({ success: true, data: { ...result, advisory: true } });
   } catch (error) {
@@ -188,25 +227,28 @@ exports.matchScore = async (req, res) => {
 
 exports.adminInsights = async (_req, res) => {
   try {
-    const [jobsBySkill, jobsByStatus, appsByStatus, usersByRole, approvals] = await Promise.all([
+    const [jobsBySkill, jobsByStatus, appsByStatus, usersByRole, approvals, hiringIntelligence] = await Promise.all([
       Job.aggregate([{ $unwind: "$skills" }, { $group: { _id: "$skills", count: { $sum: 1 } } }, { $sort: { count: -1 } }, { $limit: 12 }]),
       Job.aggregate([{ $group: { _id: "$status", count: { $sum: 1 } } }]),
       Application.aggregate([{ $group: { _id: "$status", count: { $sum: 1 } } }]),
       User.aggregate([{ $group: { _id: "$role", count: { $sum: 1 } } }]),
       Company.aggregate([{ $group: { _id: "$verificationStatus", count: { $sum: 1 } } }]),
+      getAdminHiringIntelligence(),
     ]);
     const result = await jsonPrompt(
-      `Create admin hiring insights from aggregates: ${JSON.stringify({ jobsBySkill, jobsByStatus, appsByStatus, usersByRole, approvals })}\nReturn {"topSkills":[],"hiringTrends":[],"applicationTrends":[],"recruiterActivitySummary":"","recommendations":[]}.`,
+      `Create admin hiring intelligence insights from aggregates: ${JSON.stringify({ jobsBySkill, jobsByStatus, appsByStatus, usersByRole, approvals, hiringIntelligence })}\nReturn {"topSkills":[],"hiringTrends":[],"applicationTrends":[],"recruiterActivitySummary":"","recommendations":[],"resumeQualityTrends":[],"skillDemandTrends":[]}.`,
       () => ({
         topSkills: jobsBySkill.map((item) => item._id),
         hiringTrends: [],
         applicationTrends: [],
         recruiterActivitySummary: "",
         recommendations: [],
+        resumeQualityTrends: [],
+        skillDemandTrends: [],
       })
     );
     if (result.unavailable) return unavailableResponse(res, result);
-    res.json({ success: true, data: result });
+    res.json({ success: true, data: { ...result, hiringIntelligence } });
   } catch (error) {
     fail(res, error);
   }

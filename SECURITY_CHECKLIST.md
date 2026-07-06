@@ -7,6 +7,8 @@
 - Auth responses exclude passwords and reset tokens.
 - Uploads validate type and size.
 - AI prompts are backend-only, size-limited, and scrub obvious secrets.
+- Resume text sent to AI is sanitized and length-limited.
+- Parsed resume raw text is excluded from default MongoDB reads.
 - AI routes are rate limited.
 - Chat routes enforce conversation membership before room joins/actions.
 - Admin user actions block self-suspension, self-role-change, and self-delete.

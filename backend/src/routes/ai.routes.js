@@ -11,6 +11,7 @@ router.use(protect, aiLimiter);
 
 router.post("/career-assistant", authorize("candidate"), ai.careerAssistant);
 router.post("/resume-analyze", authorize("candidate"), ai.resumeAnalyze);
+router.get("/resume/parsed", authorize("candidate"), ai.parsedResume);
 router.get("/job-recommendations", authorize("candidate"), ai.jobRecommendations);
 
 router.post("/recruiter/job-description", authorize("recruiter"), ai.generateJobDescription);

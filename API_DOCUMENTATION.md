@@ -118,21 +118,32 @@ controlled fallback response instead of raw vendor errors:
 
 - `POST /api/ai/career-assistant` candidate-only career Q&A.
 - `POST /api/ai/resume-analyze` candidate-only resume/profile analysis.
-- `GET /api/ai/job-recommendations` candidate-only job recommendations.
+  Accepts optional `resumeText` and `jobId`; returns ATS score, strengths,
+  weaknesses, missing keywords, formatting suggestions, role fit score,
+  improvement suggestions, resume summary rewrite, and parsed resume facts.
+- `GET /api/ai/resume/parsed` candidate-only parsed resume data for the current
+  uploaded resume.
+- `GET /api/ai/job-recommendations` candidate-only job recommendations with
+  skill gaps, learning path suggestions, resume tips, and career roadmap.
 - `POST /api/ai/recruiter/job-description` recruiter-only job description
   preview.
 - `POST /api/ai/recruiter/interview-questions` recruiter-only screening
   questions.
 - `POST /api/ai/recruiter/candidate-summary` recruiter-only candidate summary.
 - `GET /api/ai/recruiter/applications/:applicationId/match-score`
-  recruiter-only advisory scoring for owned applicants.
-- `GET /api/ai/admin/insights` admin-only aggregate insight generation.
+  recruiter-only advisory scoring for owned applicants, including match score,
+  skill match, experience match, education match, salary fit, location fit,
+  resume quality, risk flags, suggested interview questions, and screening
+  summary.
+- `GET /api/ai/admin/insights` admin-only aggregate insight generation with
+  resume quality and skill demand trends.
 
 ## Candidate
 
 - `GET /api/candidate/profile` returns the persisted candidate profile.
 - `PUT /api/candidate/profile` creates or updates the profile and accepts an
-  optional PDF `resume` multipart field up to 10 MB.
+  optional PDF or DOCX `resume` multipart field up to 10 MB. Resume parsing is
+  performed on the backend and stored in `ParsedResume`.
 - Candidate profiles persist `preferredJobTypes`, `preferredWorkModes`,
   `preferredIndustries`, and `expectedSalaryMin`.
 - `GET /api/applications/me` returns paginated candidate applications.

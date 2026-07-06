@@ -56,6 +56,9 @@ const PlatformAnalytics = () => {
             <div><p className="font-medium">Recruiter Activity</p><p className="mt-1 text-sm text-muted-foreground">{insights.recruiterActivitySummary || "No summary returned"}</p></div>
             <div><p className="font-medium">Hiring Trends</p><ul className="mt-1 list-disc pl-5 text-sm text-muted-foreground">{insights.hiringTrends?.map((item) => <li key={item}>{item}</li>)}</ul></div>
             <div><p className="font-medium">Recommendations</p><ul className="mt-1 list-disc pl-5 text-sm text-muted-foreground">{insights.recommendations?.map((item) => <li key={item}>{item}</li>)}</ul></div>
+            <div><p className="font-medium">Resume Quality Trends</p><ul className="mt-1 list-disc pl-5 text-sm text-muted-foreground">{insights.resumeQualityTrends?.map((item) => <li key={item}>{item}</li>)}</ul></div>
+            <div><p className="font-medium">Skill Demand Trends</p><ul className="mt-1 list-disc pl-5 text-sm text-muted-foreground">{insights.skillDemandTrends?.map((item) => <li key={item}>{item}</li>)}</ul></div>
+            {insights.hiringIntelligence?.resumeQuality && <div><p className="font-medium">Analyzed Resumes</p><p className="mt-1 text-sm text-muted-foreground">{insights.hiringIntelligence.resumeQuality.analyzedResumes || 0} resumes, average ATS {Math.round(insights.hiringIntelligence.resumeQuality.avgAtsScore || 0)}/100</p></div>}
           </div>}
         </CardContent>
       </Card>

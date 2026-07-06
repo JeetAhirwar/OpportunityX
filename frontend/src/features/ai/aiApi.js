@@ -19,7 +19,8 @@ const withFriendlyAiError = async (request) => {
     }
 };
 export const askCareerAssistant = (message) => withFriendlyAiError(api.post("/ai/career-assistant", { message }).then(unwrap));
-export const analyzeResume = () => withFriendlyAiError(api.post("/ai/resume-analyze").then(unwrap));
+export const analyzeResume = (payload = {}) => withFriendlyAiError(api.post("/ai/resume-analyze", payload).then(unwrap));
+export const getParsedResume = () => withFriendlyAiError(api.get("/ai/resume/parsed").then(unwrap));
 export const getAiJobRecommendations = () => withFriendlyAiError(api.get("/ai/job-recommendations").then(unwrap));
 export const generateJobDescription = (payload) => withFriendlyAiError(api.post("/ai/recruiter/job-description", payload).then(unwrap));
 export const getApplicationMatchScore = (applicationId) => withFriendlyAiError(api.get(`/ai/recruiter/applications/${applicationId}/match-score`).then(unwrap));

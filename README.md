@@ -70,9 +70,11 @@ Email automation is provider-neutral and currently uses Nodemailer through SMTP.
 
 Configure `EMAIL_PROVIDER`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `FROM_EMAIL`, and `FROM_NAME` in `backend/.env`. Legacy `SMTP_PASS` and `EMAIL_FROM` remain supported. See [email architecture](docs/email-architecture.md) for provider migration notes and template coverage.
 
-## AI Features
+## AI Candidate Intelligence
 
 AI endpoints are served from `/api/ai` and require role-based auth. Set provider keys such as `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, `GROQ_API_KEY`, or `OPENAI_API_KEY` in `backend/.env` to enable provider responses. Without a configured provider, the frontend shows unavailable states instead of fake AI content.
+
+OpportunityX parses uploaded PDF and DOCX resumes on the backend, stores sanitized parsed resume intelligence in MongoDB, and uses the existing provider fallback system for ATS scoring, resume improvement, candidate-job matching, recruiter applicant scoring, candidate learning guidance, and admin hiring insights. AI keys and raw provider calls remain backend-only.
 
 ## Frontend UI Stabilization
 
