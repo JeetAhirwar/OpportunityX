@@ -14,6 +14,9 @@ const safeUser = (user) => ({
   role: user.role,
   isActive: user.isActive,
   isVerified: user.isVerified,
+  organizationId: user.organizationId || null,
+  currentOrganization: user.currentOrganization || user.organizationId || null,
+  organizations: user.organizations || [],
 });
 
 exports.register = async (req, res) => {

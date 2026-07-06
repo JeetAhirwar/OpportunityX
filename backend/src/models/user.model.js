@@ -15,12 +15,17 @@ const userSchema = new mongoose.Schema(
 
     isVerified: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
+    organizationId: { type: mongoose.Schema.Types.ObjectId, ref: "Organization", default: null, index: true },
+    currentOrganization: { type: mongoose.Schema.Types.ObjectId, ref: "Organization", default: null, index: true },
+    organizations: [{ type: mongoose.Schema.Types.ObjectId, ref: "Organization" }],
     lastLogin: { type: Date },
     resetPasswordToken: { type: String, select: false, default: null },
     resetPasswordExpires: { type: Date, select: false, default: null },
   },
   { timestamps: true }
 );
+
+userSchema.index({ role: 1, organizationId: 1 });
 
 // hash password
 userSchema.pre("save", async function () {

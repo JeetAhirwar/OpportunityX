@@ -9,6 +9,13 @@ const jobSchema = new mongoose.Schema(
       index: true,
     },
 
+    organizationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Organization",
+      default: null,
+      index: true,
+    },
+
     description: {
       type: String,
       required: true,
@@ -121,7 +128,8 @@ const jobSchema = new mongoose.Schema(
 
 
 // 🔥 Compound indexes for performance
-jobSchema.index({ status: 1, featured: 1, createdAt: -1 });
+jobSchema.index({ organizationId: 1, status: 1, featured: 1, createdAt: -1 });
+jobSchema.index({ organizationId: 1, postedBy: 1, createdAt: -1 });
 jobSchema.index({ title: "text", company: "text", description: "text" });
 
 module.exports = mongoose.model("Job", jobSchema);

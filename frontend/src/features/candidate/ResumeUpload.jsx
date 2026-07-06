@@ -95,7 +95,7 @@ const ResumeUpload = () => {
               {uploading && <p className="mt-3 flex items-center text-sm text-muted-foreground"><Loader2 className="mr-2 h-4 w-4 animate-spin"/> Uploading resume...</p>}
               {profile?.resumeUrl && <div className="mt-4 flex flex-wrap gap-2">
                 <Button variant="outline" size="sm" asChild><a href={resumeHref(profile.resumeUrl)} target="_blank" rel="noopener noreferrer"><ExternalLink className="mr-2 h-4 w-4"/> View Current Resume</a></Button>
-                <Button size="sm" onClick={() => void handleAnalyze()} disabled={analyzing} className="gradient-primary border-0">{analyzing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4"/>} Analyze Resume</Button>
+                <Button size="sm" onClick={() => void handleAnalyze()} disabled={analyzing}>{analyzing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4"/>} Analyze Resume</Button>
               </div>}
             </>)}
         </CardContent>

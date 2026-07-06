@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 
 const recruiterNoteSchema = new mongoose.Schema(
   {
+    organizationId: { type: mongoose.Schema.Types.ObjectId, ref: "Organization", default: null, index: true },
     recruiter: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     candidate: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     job: { type: mongoose.Schema.Types.ObjectId, ref: "Job", required: true },
@@ -12,7 +13,7 @@ const recruiterNoteSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-recruiterNoteSchema.index({ recruiter: 1, candidate: 1, job: 1 });
+recruiterNoteSchema.index({ organizationId: 1, recruiter: 1, candidate: 1, job: 1 });
 recruiterNoteSchema.index({ application: 1, createdAt: -1 });
 
 module.exports = mongoose.model("RecruiterNote", recruiterNoteSchema);

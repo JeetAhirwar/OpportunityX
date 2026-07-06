@@ -33,25 +33,25 @@ const Login = () => {
         }
     };
     return (<div className="dashboard-shell flex min-h-screen">
-      <div className="relative hidden w-1/2 items-center justify-center overflow-hidden border-r border-border/70 bg-card/45 lg:flex">
-        <div className="surface-grid absolute inset-0 opacity-60"/>
+      <div className="relative hidden w-1/2 items-center justify-center overflow-hidden border-r border-border/80 bg-card lg:flex">
+        <div className="surface-grid absolute inset-0 opacity-35"/>
         <div className="relative max-w-md p-12 text-center">
           <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-lg border border-primary/30 bg-primary/10">
             <Briefcase className="h-8 w-8 text-primary"/>
           </div>
-          <h2 className="mb-4 font-display text-3xl font-bold">Welcome Back</h2>
+          <h2 className="mb-4 font-display text-3xl font-semibold">Welcome Back</h2>
           <p className="text-muted-foreground">Sign in to access your dashboard, manage applications, and discover new opportunities.</p>
         </div>
       </div>
 
       <div className="flex w-full items-center justify-center p-6 lg:w-1/2">
-        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="premium-surface w-full max-w-md rounded-lg p-6">
+        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-sm">
           <Link to="/" className="mb-8 flex items-center gap-2">
             <OXLogo className="h-9 w-9"/>
-            <span className="font-display text-xl font-bold">Opportunity<span className="gradient-text">X</span></span>
+            <span className="font-display text-xl font-semibold">Opportunity<span className="text-primary">X</span></span>
           </Link>
 
-          <h1 className="mb-2 font-display text-2xl font-bold">Sign In</h1>
+          <h1 className="mb-2 font-display text-2xl font-semibold">Sign In</h1>
           <p className="mb-8 text-sm text-muted-foreground">Enter your credentials to access your account</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -75,7 +75,7 @@ const Login = () => {
                 </button>
               </div>
             </div>
-            <Button type="submit" className="gradient-primary w-full border-0" disabled={isLoading}>
+            <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Signing in..." : "Sign In"} {!isLoading && <ArrowRight className="ml-2 h-4 w-4"/>}
             </Button>
           </form>

@@ -72,7 +72,7 @@ const CompanyProfile = () => {
       <PageHeader title="Company Profile" description="Showcase your company to attract top talent">
         <Badge className={status.className}><StatusIcon className="mr-1 h-3.5 w-3.5"/> {status.label}</Badge>
         <Button variant="outline" onClick={() => void handleSave()} disabled={saving}><Save className="mr-2 h-4 w-4"/> {saving ? "Saving..." : "Save"}</Button>
-        {!["verified", "pending"].includes(form.verificationStatus) && <Button onClick={() => void handleSubmit()} disabled={submitting} className="gradient-primary border-0"><Send className="mr-2 h-4 w-4"/> {submitting ? "Submitting..." : "Submit Verification"}</Button>}
+        {!["verified", "pending"].includes(form.verificationStatus) && <Button onClick={() => void handleSubmit()} disabled={submitting}><Send className="mr-2 h-4 w-4"/> {submitting ? "Submitting..." : "Submit Verification"}</Button>}
       </PageHeader>
       {form.verificationStatus === "rejected" && form.rejectionReason && <Card className="border-destructive/30"><CardContent className="p-4 text-sm text-destructive">Verification rejected: {form.rejectionReason}</CardContent></Card>}
       <Card>

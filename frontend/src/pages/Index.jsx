@@ -108,17 +108,16 @@ const Index = () => {
       <Navbar />
 
       {/* Hero */}
-      <section className="relative overflow-hidden border-b border-border/60 py-16 md:py-24">
-        <div className="surface-grid pointer-events-none absolute inset-0 opacity-70"/>
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,hsl(var(--primary)_/_0.18),transparent_38%),linear-gradient(225deg,hsl(var(--accent)_/_0.12),transparent_40%)]"/>
+      <section className="relative overflow-hidden border-b border-border/80 bg-card py-14 md:py-20">
+        <div className="surface-grid pointer-events-none absolute inset-0 opacity-25"/>
 
         <div className="container relative mx-auto px-4">
           <div className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
             <motion.div initial="hidden" animate="visible">
-              <motion.div variants={fadeInUp} custom={0} className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-4 py-1.5 text-sm font-semibold text-primary shadow-inner">
+              <motion.div variants={fadeInUp} custom={0} className="mb-4 inline-flex items-center gap-2 rounded-md border border-primary/25 bg-primary/10 px-3 py-1.5 text-sm font-semibold text-primary">
                 <Zap className="h-3.5 w-3.5"/> AI hiring intelligence for verified opportunities
               </motion.div>
-              <motion.h1 variants={fadeInUp} custom={1} className="mb-6 max-w-4xl font-display text-4xl font-bold leading-tight md:text-6xl">
+              <motion.h1 variants={fadeInUp} custom={1} className="mb-6 max-w-4xl font-display text-4xl font-semibold leading-tight md:text-5xl">
                 OpportunityX turns hiring signals into{" "}
                 <span className="gradient-text">clear next steps</span>
               </motion.h1>
@@ -127,7 +126,7 @@ const Index = () => {
               </motion.p>
 
               <motion.div variants={fadeInUp} custom={3} className="max-w-3xl">
-                <div className="glass-strong flex flex-col gap-3 rounded-lg p-3 shadow-2xl md:flex-row md:items-center">
+                <div className="flex flex-col gap-3 rounded-lg border border-border bg-background p-3 shadow-sm md:flex-row md:items-center">
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"/>
                     <Input placeholder="Job title or keyword" value={searchTitle} onChange={(e) => setSearchTitle(e.target.value)} className="border-0 bg-transparent pl-10 shadow-none focus-visible:ring-0"/>
@@ -155,7 +154,7 @@ const Index = () => {
             </motion.div>
 
             <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }} className="relative">
-              <div className="glass-strong overflow-hidden rounded-lg shadow-2xl">
+              <div className="overflow-hidden rounded-lg border border-border bg-background shadow-sm">
                 <div className="border-b border-border/70 px-4 py-3">
                   <div className="flex items-center justify-between">
                     <div>
@@ -200,14 +199,14 @@ const Index = () => {
       </section>
 
       {/* Metrics */}
-      <section className="border-y border-border/70 bg-card/45 py-12 backdrop-blur">
+      <section className="border-y border-border/80 bg-background py-12">
         <div className="container mx-auto px-4">
           <div className="grid gap-4 md:grid-cols-4">
-            {metricCards.map((stat, i) => (<motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }} className="rounded-lg border border-border/70 bg-background/55 p-5">
-                <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-lg border border-primary/20 bg-primary/10">
+            {metricCards.map((stat, i) => (<motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }} className="rounded-lg border border-border bg-card p-5 shadow-sm">
+                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg border border-primary/20 bg-primary/10">
                   <stat.icon className="h-5 w-5 text-primary"/>
                 </div>
-                <p className="font-display text-2xl font-bold">{stat.value}</p>
+                <p className="font-display text-2xl font-semibold">{stat.value}</p>
                 <p className="text-sm font-semibold">{stat.label}</p>
                 <p className="mt-2 text-xs leading-5 text-muted-foreground">{stat.note}</p>
               </motion.div>))}
@@ -221,7 +220,7 @@ const Index = () => {
           <div className="mb-12 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase text-primary">Live roles</p>
-              <h2 className="mt-2 font-display text-3xl font-bold md:text-4xl">Featured Jobs</h2>
+              <h2 className="mt-2 font-display text-3xl font-semibold">Featured Jobs</h2>
               <p className="mt-2 text-muted-foreground">
                 {metrics.featuredJobs > 0 ? `${metrics.featuredJobs} roles currently highlighted from the jobs API.` : "Current highlighted roles from verified hiring teams."}
               </p>
@@ -238,7 +237,7 @@ const Index = () => {
               <p className="mt-2 text-sm text-muted-foreground">When recruiters publish active roles, they will appear here automatically.</p>
             </div>) : (<div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
               {featuredJobs.map((job, i) => (<motion.div key={job._id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}>
-                  <Card className="group h-full transition-all hover:-translate-y-1 hover:border-primary/35 hover:shadow-xl">
+                  <Card className="group h-full transition-colors hover:border-primary/35">
                     <CardContent className="flex h-full flex-col p-5">
                       <div className="mb-5 flex items-start justify-between">
                         <div className="flex items-center gap-3">
@@ -304,11 +303,11 @@ const Index = () => {
       </section>
 
       {/* Why OpportunityX */}
-      <section className="border-y border-border/70 bg-card/45 py-20 backdrop-blur">
+      <section className="border-y border-border/80 bg-card py-20">
         <div className="container mx-auto px-4">
           <div className="mx-auto mb-12 max-w-2xl text-center">
             <p className="text-xs font-semibold uppercase text-primary">Why OpportunityX</p>
-            <h2 className="mt-2 font-display text-3xl font-bold md:text-4xl">Built around real hiring workflows</h2>
+            <h2 className="mt-2 font-display text-3xl font-semibold">Built around real hiring workflows</h2>
             <p className="mt-3 text-muted-foreground">The platform connects AI assistance, verified company operations, application tracking, and live communication without replacing real API data.</p>
           </div>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -332,7 +331,7 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="mb-12 text-center">
             <p className="text-xs font-semibold uppercase text-primary">Operating model</p>
-            <h2 className="mt-2 font-display text-3xl font-bold md:text-4xl">Two focused paths, one platform</h2>
+            <h2 className="mt-2 font-display text-3xl font-semibold">Two focused paths, one platform</h2>
           </div>
           <div className="grid gap-6 lg:grid-cols-2">
             {[
@@ -362,15 +361,15 @@ const Index = () => {
       </section>
 
       {/* AI Feature Highlight */}
-      <section className="border-y border-border/70 bg-card/45 py-20 backdrop-blur">
+      <section className="border-y border-border/80 bg-card py-20">
         <div className="container mx-auto px-4">
-          <div className="glass-strong overflow-hidden rounded-lg">
+          <div className="overflow-hidden rounded-lg border border-border bg-background shadow-sm">
             <div className="grid items-center md:grid-cols-2">
               <div className="p-8 md:p-12">
                 <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-accent/10 px-4 py-1.5 text-sm font-medium text-accent">
                   <Brain className="h-3.5 w-3.5"/> AI assistance
                 </div>
-                <h2 className="mb-4 font-display text-3xl font-bold md:text-4xl">
+                <h2 className="mb-4 font-display text-3xl font-semibold">
                   AI that explains, suggests, and stays accountable
                 </h2>
                 <p className="mb-6 text-muted-foreground">
@@ -381,17 +380,17 @@ const Index = () => {
                       <CheckCircle2 className="h-4 w-4 text-success"/> {item}
                     </li>))}
                 </ul>
-                <Button className="gradient-primary border-0" asChild>
+                <Button asChild>
                   <Link to="/register">Create Account <ArrowRight className="ml-2 h-4 w-4"/></Link>
                 </Button>
               </div>
-              <div className="bg-gradient-to-br from-primary/5 to-accent/5 p-8 md:p-12">
+              <div className="border-t border-border bg-secondary/30 p-8 md:border-l md:border-t-0 md:p-12">
                 <div className="w-full space-y-4">
                   {[
             { title: "Resume Analyzer", body: "Highlights strengths, weaknesses, and ATS suggestions after a real upload." },
             { title: "Recruiter Match Score", body: "Frames candidate fit as advisory scoring with risk flags and next steps." },
             { title: "Career Assistant", body: "Answers candidate questions without exposing provider internals." },
-        ].map((rec) => (<div key={rec.title} className="glass rounded-lg p-4 transition-all hover:scale-[1.02]">
+        ].map((rec) => (<div key={rec.title} className="rounded-lg border border-border bg-card p-4 transition-colors hover:border-primary/35">
                       <p className="font-display text-sm font-semibold">{rec.title}</p>
                       <p className="mt-1 text-xs leading-5 text-muted-foreground">{rec.body}</p>
                     </div>))}
@@ -407,7 +406,7 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="mb-12 text-center">
             <p className="text-xs font-semibold uppercase text-primary">Platform proof</p>
-            <h2 className="mt-2 font-display text-3xl font-bold md:text-4xl">Product proof comes from the workflow</h2>
+            <h2 className="mt-2 font-display text-3xl font-semibold">Product proof comes from the workflow</h2>
             <p className="mx-auto mt-3 max-w-2xl text-muted-foreground">Instead of invented quotes, OpportunityX now highlights concrete platform capabilities that exist in the application.</p>
           </div>
           <div className="grid gap-4 md:grid-cols-3">
@@ -428,11 +427,11 @@ const Index = () => {
       {/* CTA */}
       <section className="py-20">
         <div className="container mx-auto px-4">
-          <div className="overflow-hidden rounded-lg border border-border/70 bg-card/80 shadow-2xl shadow-primary/10">
+          <div className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
             <div className="grid md:grid-cols-2">
               <div className="border-b border-border/70 p-8 md:border-b-0 md:border-r md:p-12">
                 <p className="text-xs font-semibold uppercase text-primary">For Candidates</p>
-                <h2 className="mt-3 font-display text-3xl font-bold">Find roles with better context</h2>
+                <h2 className="mt-3 font-display text-3xl font-semibold">Find roles with better context</h2>
                 <p className="mt-3 text-muted-foreground">Build your profile, upload a resume, save jobs, apply, chat, and track applications.</p>
                 <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                   <Button asChild><Link to="/jobs">Find Jobs</Link></Button>
@@ -441,7 +440,7 @@ const Index = () => {
               </div>
               <div className="p-8 md:p-12">
                 <p className="text-xs font-semibold uppercase text-primary">For Recruiters</p>
-                <h2 className="mt-3 font-display text-3xl font-bold">Run a verified hiring pipeline</h2>
+                <h2 className="mt-3 font-display text-3xl font-semibold">Run a verified hiring pipeline</h2>
                 <p className="mt-3 text-muted-foreground">Create your company, submit verification, publish roles, review applicants, and message candidates.</p>
                 <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                   <Button asChild><Link to="/register?role=recruiter">Start Hiring</Link></Button>

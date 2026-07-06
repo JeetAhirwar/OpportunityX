@@ -77,7 +77,7 @@ const PublicProfile = () => {
         {/* Banner */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <Card className="overflow-hidden">
-            <div className="gradient-primary h-32 md:h-40"/>
+            <div className="h-32 border-b border-border bg-secondary md:h-40"/>
             <CardContent className="relative px-6 pb-6">
               <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-end -mt-12">
                 <div className="h-24 w-24 rounded-full bg-muted border-4 border-card flex items-center justify-center overflow-hidden shadow-lg">

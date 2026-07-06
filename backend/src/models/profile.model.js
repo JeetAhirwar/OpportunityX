@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 
 const profileSchema = new mongoose.Schema(
     {
+        organizationId: { type: mongoose.Schema.Types.ObjectId, ref: "Organization", default: null, index: true },
         user: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
@@ -149,5 +150,7 @@ const profileSchema = new mongoose.Schema(
     },
     { timestamps: true }
 );
+
+profileSchema.index({ organizationId: 1, user: 1 });
 
 module.exports = mongoose.model("Profile", profileSchema);

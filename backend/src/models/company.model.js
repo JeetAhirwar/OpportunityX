@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 
 const companySchema = new mongoose.Schema(
   {
+    organizationId: { type: mongoose.Schema.Types.ObjectId, ref: "Organization", default: null, index: true },
     recruiter: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, unique: true, index: true },
     companyName: { type: String, trim: true, default: "" },
     recruiterName: { type: String, trim: true, default: "" },
@@ -29,5 +30,7 @@ const companySchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+companySchema.index({ organizationId: 1, verificationStatus: 1 });
 
 module.exports = mongoose.model("Company", companySchema);

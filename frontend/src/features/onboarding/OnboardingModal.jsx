@@ -289,7 +289,7 @@ const OnboardingModal = ({ open, onComplete }) => {
               <Button size="sm" disabled={!canProceed()} onClick={() => setStep(step + 1)}>
                 Continue <ChevronRight className="ml-1 h-4 w-4"/>
               </Button>
-            </div>) : (<Button size="sm" className="gradient-primary border-0" onClick={handleFinish} disabled={isSaving}>
+            </div>) : (<Button size="sm" onClick={handleFinish} disabled={isSaving}>
               {isSaving ? "Saving..." : "Go to Dashboard"} <ChevronRight className="ml-1 h-4 w-4"/>
             </Button>)}
         </div>

@@ -46,6 +46,7 @@ const timelineEventSchema = new mongoose.Schema(
 
 const applicationSchema = new mongoose.Schema(
   {
+    organizationId: { type: mongoose.Schema.Types.ObjectId, ref: "Organization", default: null, index: true },
     job: { type: mongoose.Schema.Types.ObjectId, ref: "Job", required: true },
     candidate: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     status: {
@@ -70,10 +71,10 @@ const applicationSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-applicationSchema.index({ job: 1, candidate: 1 }, { unique: true });
+applicationSchema.index({ organizationId: 1, job: 1, candidate: 1 }, { unique: true });
 applicationSchema.index({ candidate: 1, createdAt: -1 });
-applicationSchema.index({ job: 1, status: 1 });
-applicationSchema.index({ job: 1, pipelineStage: 1, updatedAt: -1 });
+applicationSchema.index({ organizationId: 1, job: 1, status: 1 });
+applicationSchema.index({ organizationId: 1, job: 1, pipelineStage: 1, updatedAt: -1 });
 applicationSchema.index({ candidate: 1, pipelineStage: 1 });
 
 applicationSchema.pre("validate", function () {

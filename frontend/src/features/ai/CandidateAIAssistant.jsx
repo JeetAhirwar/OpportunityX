@@ -40,7 +40,7 @@ const CandidateAIAssistant = () => {
                 Ask about resume positioning, interview prep, job search strategy, or skills to develop next.
               </div>)}
             {messages.map((message, index) => (<div key={`${message.role}-${index}`} className={message.role === "user" ? "text-right" : "text-left"}>
-                <div className={`inline-block max-w-[80%] rounded-2xl px-4 py-2 text-sm ${message.role === "user" ? "gradient-primary text-primary-foreground" : "bg-muted"}`}>
+                <div className={`inline-block max-w-[80%] rounded-lg px-4 py-2 text-sm ${message.role === "user" ? "bg-primary text-primary-foreground" : "bg-secondary"}`}>
                   {message.text}
                 </div>
               </div>))}
@@ -49,7 +49,7 @@ const CandidateAIAssistant = () => {
           </div>
           <div className="flex gap-2 border-t border-border p-4">
             <Input value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => event.key === "Enter" && void submit()} placeholder="Ask a career question..."/>
-            <Button onClick={() => void submit()} disabled={loading || !input.trim()} size="icon" className="gradient-primary border-0"><Send className="h-4 w-4"/></Button>
+            <Button onClick={() => void submit()} disabled={loading || !input.trim()} size="icon"><Send className="h-4 w-4"/></Button>
           </div>
         </CardContent>
       </Card>

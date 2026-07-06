@@ -14,6 +14,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.use("/api/auth", require("./routes/auth.routes"));
+app.use("/api/organizations", require("./routes/organization.routes"));
 app.use("/api/candidate", require("./routes/profile.routes"));
 app.use("/api/jobs", require("./routes/job.routes"));
 app.use("/api/applications", require("./routes/application.routes"));

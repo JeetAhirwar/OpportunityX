@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 
 const notificationSchema = new mongoose.Schema(
   {
+    organizationId: { type: mongoose.Schema.Types.ObjectId, ref: "Organization", default: null, index: true },
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     recipient: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     sender: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
@@ -31,7 +32,7 @@ const notificationSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-notificationSchema.index({ user: 1, createdAt: -1 });
+notificationSchema.index({ organizationId: 1, user: 1, createdAt: -1 });
 notificationSchema.index({ recipient: 1, isRead: 1, createdAt: -1 });
 notificationSchema.index({ user: 1, read: 1, createdAt: -1 });
 notificationSchema.index({ "metadata.dedupeKey": 1, user: 1 }, { sparse: true });

@@ -236,7 +236,7 @@ const JobDetail = () => {
               </CardContent>
             </Card>
             <Card><CardContent className="p-6 text-center"><Users className="mx-auto mb-2 h-8 w-8 text-muted-foreground"/><p className="font-display text-2xl font-bold">{job.applicantCount || 0}</p><p className="text-sm text-muted-foreground">applicants so far</p><p className="mt-2 text-xs text-muted-foreground">{job.views || 0} views</p></CardContent></Card>
-            <Card className="gradient-primary">
+            <Card className="border-primary/30 bg-primary text-primary-foreground">
               <CardContent className="p-6 text-center">
                 <h3 className="mb-2 font-display font-semibold text-primary-foreground">Ready to apply?</h3>
                 <p className="mb-4 text-sm text-primary-foreground/70">Submit your application now</p>

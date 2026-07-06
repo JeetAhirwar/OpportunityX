@@ -92,20 +92,20 @@ const Navbar = () => {
         await markAllNotificationsRead();
         setRecentNotifications((items) => items.map((item) => ({ ...item, read: true, isRead: true })));
     };
-    return (<nav className="sticky top-0 z-50 border-b border-border/60 bg-background/78 shadow-[0_10px_34px_hsl(224_48%_3%/0.16)] backdrop-blur-2xl">
+    return (<nav className="sticky top-0 z-50 border-b border-border/80 bg-background/90 backdrop-blur-xl">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2">
           <OXLogo className="h-9 w-9"/>
-          <span className="font-display text-xl font-bold tracking-normal">
-            Opportunity<span className="gradient-text">X</span>
+          <span className="font-display text-lg font-semibold tracking-normal">
+            Opportunity<span className="text-primary">X</span>
           </span>
-          <span className="hidden rounded-full border border-border/70 bg-secondary/60 px-2 py-0.5 text-[10px] font-semibold uppercase text-muted-foreground lg:inline-flex">
-            GhostCode Dynamics
+          <span className="hidden rounded-md border border-border bg-secondary/60 px-2 py-0.5 text-[10px] font-semibold uppercase text-muted-foreground lg:inline-flex">
+            Enterprise hiring
           </span>
         </Link>
 
         <div className="hidden items-center gap-1 md:flex">
-          {publicLinks.map((link) => (<Link key={link.href} to={link.href} className={`rounded-md px-3 py-2 text-sm font-semibold transition-all hover:bg-secondary/80 hover:text-foreground ${isActive(link.href) ? "bg-secondary text-foreground shadow-inner" : "text-muted-foreground"}`}>
+          {publicLinks.map((link) => (<Link key={link.href} to={link.href} className={`rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-secondary/80 hover:text-foreground ${isActive(link.href) ? "bg-secondary text-foreground" : "text-muted-foreground"}`}>
               {link.label}
             </Link>))}
         </div>
@@ -208,9 +208,9 @@ const Navbar = () => {
       </div>
 
       <AnimatePresence>
-        {mobileOpen && (<motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden border-t border-border/50 bg-background/95 backdrop-blur-2xl md:hidden">
+        {mobileOpen && (<motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden border-t border-border/80 bg-background/95 backdrop-blur-xl md:hidden">
             <div className="container mx-auto space-y-1 px-4 py-4">
-              {publicLinks.map((link) => (<Link key={link.href} to={link.href} onClick={() => setMobileOpen(false)} className={`block rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors ${isActive(link.href) ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-secondary/70"}`}>
+              {publicLinks.map((link) => (<Link key={link.href} to={link.href} onClick={() => setMobileOpen(false)} className={`block rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${isActive(link.href) ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-secondary/70"}`}>
                   {link.label}
                 </Link>))}
               {!isAuthenticated && (<div className="flex gap-2 pt-2">
@@ -222,11 +222,11 @@ const Navbar = () => {
                   </Button>
                 </div>)}
               {isAuthenticated && (<div className="space-y-1 border-t border-border/60 pt-3">
-                  {authenticatedMobileLinks.map((link) => (<Link key={link.href} to={link.href} onClick={() => setMobileOpen(false)} className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors ${isActive(link.href) ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-secondary/70"}`}>
+                  {authenticatedMobileLinks.map((link) => (<Link key={link.href} to={link.href} onClick={() => setMobileOpen(false)} className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${isActive(link.href) ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-secondary/70"}`}>
                       <link.icon className="h-4 w-4"/>
                       <span>{link.label}</span>
                     </Link>))}
-                  <button type="button" onClick={() => { setMobileOpen(false); void logout(); }} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/10">
+                  <button type="button" onClick={() => { setMobileOpen(false); void logout(); }} className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10">
                     <LogOut className="h-4 w-4"/>
                     <span>Logout</span>
                   </button>

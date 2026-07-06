@@ -18,6 +18,38 @@ email verification flow is implemented, but inactive users are rejected.
 Public registration accepts only `candidate` and `recruiter`; admin accounts
 cannot be created through `/api/auth/register`.
 
+## Organizations
+
+Organization endpoints require the OpportunityX bearer token. Tenant-aware
+resource requests can pass `x-organization-id`; authenticated users may only
+resolve organizations where they are active members.
+
+- `POST /api/organizations` creates an organization and makes the caller owner.
+- `GET /api/organizations` lists organizations for the current user.
+- `GET /api/organizations/:organizationId` returns one organization.
+- `PUT /api/organizations/:organizationId` updates profile fields.
+- `DELETE /api/organizations/:organizationId` deletes an owner-controlled organization.
+- `POST /api/organizations/:organizationId/invitations` creates a member invitation.
+- `POST /api/organizations/invitations/accept` accepts an invitation token.
+- `PATCH /api/organizations/:organizationId/members/:userId/role` changes a member role.
+- `PATCH /api/organizations/:organizationId/members/:userId/suspend` suspends a member.
+- `DELETE /api/organizations/:organizationId/members/:userId` removes a member.
+- `PATCH /api/organizations/:organizationId/owner` transfers ownership.
+- `PATCH /api/organizations/:organizationId/branding` updates logo/color/career-page/email branding.
+- `PATCH /api/organizations/:organizationId/settings` updates organization settings.
+- `GET /api/public/careers/:slug` returns the public company profile and active jobs.
+
+Permission matrix:
+
+| Role | Key permissions |
+| --- | --- |
+| Owner | Full organization, member, branding, settings, jobs, applications, interviews, analytics, ownership transfer |
+| Admin | Full management except organization deletion and ownership transfer |
+| Recruiter | Jobs, applications, interviews, analytics, member read |
+| Hiring Manager | Job/application/interview collaboration and analytics |
+| Interviewer | Read jobs/applications and manage interview participation |
+| Viewer | Read organization, jobs, applications, and analytics |
+
 Chat endpoints are mounted at `/api/chat` and require the OpportunityX bearer
 token. Conversation creation requires an `applicationId`; the backend derives
 the candidate, recruiter, and job from that application and rejects unrelated

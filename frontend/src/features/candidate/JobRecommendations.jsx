@@ -27,7 +27,7 @@ const JobRecommendations = () => {
 
     <Card className="border-primary/20 bg-primary/5">
       <CardContent className="flex items-center gap-4 p-5">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl gradient-primary">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
           <Brain className="h-6 w-6 text-primary-foreground"/>
         </div>
         <div>
@@ -71,7 +71,7 @@ const JobRecommendations = () => {
               {!!recommendation.missingSkills?.length && <p className="text-xs text-muted-foreground">Missing skills: {recommendation.missingSkills.join(", ")}</p>}
             </div>
 
-            <Button size="sm" className="w-full gradient-primary border-0" asChild><Link to={`/jobs/${job._id}`}>View Job</Link></Button>
+            <Button size="sm" className="w-full" asChild><Link to={`/jobs/${job._id}`}>View Job</Link></Button>
           </CardContent>
         </Card>);
             })}

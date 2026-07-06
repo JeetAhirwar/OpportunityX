@@ -115,12 +115,12 @@ const NotificationsPage = () => {
           <TabsTrigger value="message">Messages</TabsTrigger>
         </TabsList>
         <TabsContent value={tab} className="mt-4">
-          {loading ? (<div className="flex min-h-[260px] items-center justify-center rounded-xl border border-border"><Loader2 className="mr-2 h-5 w-5 animate-spin text-primary"/> Loading notifications...</div>) : error ? (<EmptyState icon={AlertCircle} title="Could not load notifications" description={error} action={{ label: "Try again", onClick: () => void loadPage(1, false) }}/>) : !filtered.length ? <EmptyState icon={BellOff} title="No notifications" description="You're all caught up! Check back later."/> : (<div className="space-y-2">
+          {loading ? (<div className="flex min-h-[260px] items-center justify-center rounded-lg border border-border"><Loader2 className="mr-2 h-5 w-5 animate-spin text-primary"/> Loading notifications...</div>) : error ? (<EmptyState icon={AlertCircle} title="Could not load notifications" description={error} action={{ label: "Try again", onClick: () => void loadPage(1, false) }}/>) : !filtered.length ? <EmptyState icon={BellOff} title="No notifications" description="You're all caught up! Check back later."/> : (<div className="space-y-2">
               {filtered.map((notification) => {
                 const Icon = iconFor(notification);
-                return (<Card key={notification._id} className={cn("transition-all cursor-pointer hover:shadow-md", !notification.read && "border-primary/30 bg-primary/5")} onClick={() => void markRead(notification)}>
+                return (<Card key={notification._id} className={cn("cursor-pointer transition-colors hover:border-primary/35", !notification.read && "border-primary/30 bg-primary/5")} onClick={() => void markRead(notification)}>
                     <CardContent className="flex items-start gap-4 p-4">
-                      <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", !notification.read ? "bg-primary/10" : "bg-muted")}><Icon className={cn("h-5 w-5", !notification.read ? "text-primary" : "text-muted-foreground")}/></div>
+                      <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-lg", !notification.read ? "bg-primary/10" : "bg-muted")}><Icon className={cn("h-5 w-5", !notification.read ? "text-primary" : "text-muted-foreground")}/></div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-3">
                           <h3 className={cn("text-sm", !notification.read ? "font-semibold" : "font-medium")}>{notification.title}</h3>

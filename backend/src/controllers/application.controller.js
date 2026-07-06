@@ -6,6 +6,7 @@ const notificationService = require("../services/notification.service");
 const { TYPES } = notificationService;
 const mongoose = require("mongoose");
 const { EMAIL_TYPES } = emailService;
+const { tenantFilter } = require("../utils/tenant");
 const legacyStageByStatus = {
   applied: "applied",
   reviewed: "screening",
@@ -30,6 +31,7 @@ exports.apply = async (req, res) => {
     }
 
     if (existing && existing.status === "withdrawn") {
+      existing.organizationId = job.organizationId || existing.organizationId || null;
       existing.status = "applied";
       existing.coverLetter = req.body.coverLetter || "";
       existing.appliedAt = Date.now();
@@ -58,6 +60,7 @@ exports.apply = async (req, res) => {
     }
 
     const application = await Application.create({
+      organizationId: job.organizationId || null,
       job: jobId,
       candidate: req.user._id,
       coverLetter: req.body.coverLetter || "",
@@ -140,10 +143,10 @@ exports.getApplicants = async (req, res) => {
     if (!mongoose.isValidObjectId(req.params.jobId)) {
       return res.status(400).json({ message: "Invalid job ID" });
     }
-    const job = await Job.findOne({ _id: req.params.jobId, postedBy: req.user._id });
+    const job = await Job.findOne(tenantFilter(req, { _id: req.params.jobId, postedBy: req.user._id }));
     if (!job) return res.status(404).json({ message: "Job not found" });
 
-    const applicants = await Application.find({ job: req.params.jobId })
+    const applicants = await Application.find(tenantFilter(req, { job: req.params.jobId }))
       .populate("candidate", "name email")
       .populate("job", "title company location")
       .sort({ createdAt: -1 });
@@ -181,9 +184,9 @@ exports.getApplicants = async (req, res) => {
 
 exports.getRecruiterApplicants = async (req, res) => {
   try {
-    const jobs = await Job.find({ postedBy: req.user._id }).select("_id title company");
+    const jobs = await Job.find(tenantFilter(req, { postedBy: req.user._id })).select("_id title company");
     const jobIds = jobs.map((job) => job._id);
-    const applicants = await Application.find({ job: { $in: jobIds } })
+    const applicants = await Application.find(tenantFilter(req, { job: { $in: jobIds } }))
       .populate("candidate", "name email")
       .populate("job", "title company location")
       .sort({ createdAt: -1 });
@@ -196,7 +199,7 @@ exports.getRecruiterApplicants = async (req, res) => {
 // Update application status (recruiter)
 exports.updateStatus = async (req, res) => {
   try {
-    const existing = await Application.findById(req.params.id).populate("job");
+    const existing = await Application.findOne(tenantFilter(req, { _id: req.params.id })).populate("job");
     if (!existing || String(existing.job?.postedBy) !== String(req.user._id)) {
       return res.status(404).json({ message: "Application not found" });
     }

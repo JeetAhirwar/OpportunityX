@@ -46,7 +46,7 @@ const SavedJobs = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button size="sm" className="gradient-primary border-0" onClick={() => navigate(`/jobs/${job._id}`)}><ExternalLink className="mr-1 h-3 w-3"/> View Details</Button>
+                    <Button size="sm" onClick={() => navigate(`/jobs/${job._id}`)}><ExternalLink className="mr-1 h-3 w-3"/> View Details</Button>
                     <Button variant="ghost" size="icon" onClick={() => void removeJob(job._id)} disabled={toggleSave.isPending} className="text-destructive"><Trash2 className="h-4 w-4"/></Button>
                   </div>
                 </div>

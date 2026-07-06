@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 
 const parsedResumeSchema = new mongoose.Schema(
   {
+    organizationId: { type: mongoose.Schema.Types.ObjectId, ref: "Organization", default: null, index: true },
     candidate: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -28,7 +29,7 @@ const parsedResumeSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-parsedResumeSchema.index({ updatedAt: -1 });
+parsedResumeSchema.index({ organizationId: 1, updatedAt: -1 });
 parsedResumeSchema.index({ atsScore: -1 });
 
 module.exports = mongoose.model("ParsedResume", parsedResumeSchema);

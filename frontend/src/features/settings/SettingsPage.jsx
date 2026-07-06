@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Shield, Bell, Palette, Trash2, Save, Eye, EyeOff } from "lucide-react";
+import { Building2, Globe, Shield, Bell, Palette, Trash2, Save, Eye, EyeOff, Users } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -10,12 +10,49 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTheme } from "@/store/ThemeContext";
 import { useToast } from "@/hooks/use-toast";
 import PageHeader from "@/components/common/PageHeader";
+import organizationApi from "@/features/organization/organizationApi";
 const SettingsPage = () => {
     const { theme, toggleTheme } = useTheme();
     const { toast } = useToast();
     const [showPassword, setShowPassword] = useState(false);
     const [passwords, setPasswords] = useState({ current: "", new: "", confirm: "" });
     const [notifPrefs, setNotifPrefs] = useState({ email: true, push: true, jobAlerts: true, messages: true, marketing: false });
+    const [organization, setOrganization] = useState(null);
+    const [orgForm, setOrgForm] = useState({ name: "", website: "", industry: "", companySize: "", country: "", timezone: "UTC" });
+    const [branding, setBranding] = useState({ logo: "", primaryColor: "#2563eb", secondaryColor: "#0f172a", careerPageHeadline: "", companyDescription: "", emailBranding: "" });
+    const [invite, setInvite] = useState({ email: "", role: "recruiter" });
+    useEffect(() => {
+        let active = true;
+        organizationApi.list()
+            .then((response) => {
+            if (!active)
+                return;
+            const first = response.data?.[0];
+            if (!first)
+                return;
+            setOrganization(first);
+            setOrgForm({
+                name: first.name || "",
+                website: first.website || "",
+                industry: first.industry || "",
+                companySize: first.companySize || "",
+                country: first.country || "",
+                timezone: first.timezone || "UTC",
+            });
+            setBranding({
+                logo: first.logo || "",
+                primaryColor: first.branding?.primaryColor || "#2563eb",
+                secondaryColor: first.branding?.secondaryColor || "#0f172a",
+                careerPageHeadline: first.branding?.careerPageHeadline || "",
+                companyDescription: first.branding?.companyDescription || "",
+                emailBranding: first.branding?.emailBranding || "",
+            });
+        })
+            .catch(() => undefined);
+        return () => {
+            active = false;
+        };
+    }, []);
     const handlePasswordChange = async () => {
         if (passwords.new !== passwords.confirm) {
             toast({ title: "Passwords don't match", variant: "destructive" });
@@ -29,12 +66,36 @@ const SettingsPage = () => {
         toast({ title: "Password updated successfully" });
         setPasswords({ current: "", new: "", confirm: "" });
     };
+    const saveOrganization = async () => {
+        const response = organization
+            ? await organizationApi.update(organization._id, orgForm)
+            : await organizationApi.create(orgForm);
+        setOrganization(response.data);
+        toast({ title: "Organization profile saved" });
+    };
+    const saveBranding = async () => {
+        if (!organization) {
+            toast({ title: "Create an organization first", variant: "destructive" });
+            return;
+        }
+        const response = await organizationApi.updateBranding(organization._id, branding);
+        setOrganization(response.data);
+        toast({ title: "Branding updated" });
+    };
+    const sendInvite = async () => {
+        if (!organization)
+            return;
+        await organizationApi.invite(organization._id, invite);
+        setInvite({ email: "", role: "recruiter" });
+        toast({ title: "Invitation created" });
+    };
     return (<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
       <PageHeader title="Settings" description="Manage your account preferences"/>
 
       <Tabs defaultValue="security" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 md:w-auto md:grid-cols-4">
+        <TabsList className="grid w-full grid-cols-2 md:w-auto md:grid-cols-5">
           <TabsTrigger value="security">Security</TabsTrigger>
+          <TabsTrigger value="organization">Organization</TabsTrigger>
           <TabsTrigger value="appearance">Appearance</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="danger">Danger</TabsTrigger>
@@ -60,7 +121,57 @@ const SettingsPage = () => {
                 <div><Label>New Password</Label><Input type="password" value={passwords.new} onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}/></div>
                 <div><Label>Confirm Password</Label><Input type="password" value={passwords.confirm} onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}/></div>
               </div>
-              <Button onClick={handlePasswordChange} className="gradient-primary border-0"><Save className="mr-2 h-4 w-4"/> Update Password</Button>
+              <Button onClick={handlePasswordChange}><Save className="mr-2 h-4 w-4"/> Update Password</Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="organization" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg"><Building2 className="h-5 w-5 text-primary"/> Organization Profile</CardTitle>
+              <CardDescription>Manage the company profile used by recruiter workspaces and career pages</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div><Label>Name</Label><Input value={orgForm.name} onChange={(e) => setOrgForm({ ...orgForm, name: e.target.value })}/></div>
+                <div><Label>Website</Label><Input value={orgForm.website} onChange={(e) => setOrgForm({ ...orgForm, website: e.target.value })}/></div>
+                <div><Label>Industry</Label><Input value={orgForm.industry} onChange={(e) => setOrgForm({ ...orgForm, industry: e.target.value })}/></div>
+                <div><Label>Company Size</Label><Input value={orgForm.companySize} onChange={(e) => setOrgForm({ ...orgForm, companySize: e.target.value })}/></div>
+                <div><Label>Country</Label><Input value={orgForm.country} onChange={(e) => setOrgForm({ ...orgForm, country: e.target.value })}/></div>
+                <div><Label>Timezone</Label><Input value={orgForm.timezone} onChange={(e) => setOrgForm({ ...orgForm, timezone: e.target.value })}/></div>
+              </div>
+              <Button onClick={saveOrganization}><Save className="mr-2 h-4 w-4"/> Save Organization</Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg"><Globe className="h-5 w-5 text-primary"/> Branding</CardTitle>
+              <CardDescription>Customize the public career page and outbound email brand</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div><Label>Logo URL</Label><Input value={branding.logo} onChange={(e) => setBranding({ ...branding, logo: e.target.value })}/></div>
+                <div><Label>Career Page Headline</Label><Input value={branding.careerPageHeadline} onChange={(e) => setBranding({ ...branding, careerPageHeadline: e.target.value })}/></div>
+                <div><Label>Primary Color</Label><Input type="color" value={branding.primaryColor} onChange={(e) => setBranding({ ...branding, primaryColor: e.target.value })}/></div>
+                <div><Label>Secondary Color</Label><Input type="color" value={branding.secondaryColor} onChange={(e) => setBranding({ ...branding, secondaryColor: e.target.value })}/></div>
+              </div>
+              <div><Label>Company Description</Label><Input value={branding.companyDescription} onChange={(e) => setBranding({ ...branding, companyDescription: e.target.value })}/></div>
+              <div><Label>Email Branding</Label><Input value={branding.emailBranding} onChange={(e) => setBranding({ ...branding, emailBranding: e.target.value })}/></div>
+              <Button onClick={saveBranding} variant="outline"><Palette className="mr-2 h-4 w-4"/> Save Branding</Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg"><Users className="h-5 w-5 text-primary"/> Member Invitations</CardTitle>
+              <CardDescription>Invite teammates into this organization with an organization role</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-[1fr_180px_auto]">
+              <Input placeholder="teammate@company.com" value={invite.email} onChange={(e) => setInvite({ ...invite, email: e.target.value })}/>
+              <Input value={invite.role} onChange={(e) => setInvite({ ...invite, role: e.target.value })}/>
+              <Button onClick={sendInvite} disabled={!organization || !invite.email}>Invite</Button>
             </CardContent>
           </Card>
         </TabsContent>

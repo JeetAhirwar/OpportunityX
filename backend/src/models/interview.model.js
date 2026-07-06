@@ -58,6 +58,7 @@ const timelineSchema = new mongoose.Schema(
 
 const interviewSchema = new mongoose.Schema(
   {
+    organizationId: { type: mongoose.Schema.Types.ObjectId, ref: "Organization", default: null, index: true },
     application: { type: mongoose.Schema.Types.ObjectId, ref: "Application", default: null, index: true },
     candidate: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
     job: { type: mongoose.Schema.Types.ObjectId, ref: "Job", required: true, index: true },
@@ -97,9 +98,9 @@ const interviewSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-interviewSchema.index({ recruiter: 1, scheduledAt: -1 });
+interviewSchema.index({ organizationId: 1, recruiter: 1, scheduledAt: -1 });
 interviewSchema.index({ candidate: 1, scheduledAt: -1 });
-interviewSchema.index({ job: 1, status: 1, scheduledAt: -1 });
+interviewSchema.index({ organizationId: 1, job: 1, status: 1, scheduledAt: -1 });
 interviewSchema.index({ status: 1, scheduledAt: 1 });
 
 interviewSchema.pre("validate", function seedTimeline() {

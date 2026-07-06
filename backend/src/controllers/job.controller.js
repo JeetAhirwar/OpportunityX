@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const Company = require("../models/company.model");
 const emailService = require("../services/email.service");
 const { EMAIL_TYPES } = emailService;
+const { getTenantId, tenantFilter } = require("../utils/tenant");
 
 const listFilter = (value) =>
   String(value || "")
@@ -10,9 +11,10 @@ const listFilter = (value) =>
     .map((item) => item.trim().toLowerCase())
     .filter(Boolean);
 
-const canPublish = async (recruiterId) =>
+const canPublish = async (recruiterId, organizationId) =>
   Boolean(await Company.findOne({
     recruiter: recruiterId,
+    ...(organizationId ? { $or: [{ organizationId }, { organizationId: null }, { organizationId: { $exists: false } }] } : {}),
     verificationStatus: "verified",
   }).select("_id"));
 
@@ -29,11 +31,13 @@ exports.createJob = async (req, res) =>
 {
   try
   {
-    if ((req.body.status || "active") === "active" && !(await canPublish(req.user._id))) {
+    const organizationId = getTenantId(req);
+    if ((req.body.status || "active") === "active" && !(await canPublish(req.user._id, organizationId))) {
       return rejectUnverifiedPublish(res);
     }
     const job = await Job.create({
       ...req.body,
+      organizationId,
       postedBy: req.user._id,
     });
     if (job.status === "active") {
@@ -67,16 +71,16 @@ exports.updateJob = async (req, res) =>
 {
   try
   {
-    const existing = await Job.findOne({ _id: req.params.id, postedBy: req.user._id });
+    const existing = await Job.findOne(tenantFilter(req, { _id: req.params.id, postedBy: req.user._id }));
     if (!existing) {
       return res.status(404).json({ success: false, message: "Job not found" });
     }
     const resultingStatus = req.body.status || existing.status;
-    if (resultingStatus === "active" && !(await canPublish(req.user._id))) {
+    if (resultingStatus === "active" && !(await canPublish(req.user._id, getTenantId(req)))) {
       return rejectUnverifiedPublish(res);
     }
     const job = await Job.findOneAndUpdate(
-      { _id: req.params.id, postedBy: req.user._id },
+      tenantFilter(req, { _id: req.params.id, postedBy: req.user._id }),
       req.body,
       { new: true, runValidators: true }
     );
@@ -111,6 +115,7 @@ exports.deleteJob = async (req, res) =>
   try
   {
     const job = await Job.findOneAndDelete({
+      ...tenantFilter(req),
       _id: req.params.id,
       postedBy: req.user._id,
     });
@@ -124,9 +129,9 @@ exports.deleteJob = async (req, res) =>
     }
     emailService.send({
       to: req.user.email,
-      type: status === "closed" ? EMAIL_TYPES.RECRUITER_JOB_EXPIRED : EMAIL_TYPES.RECRUITER_JOB_PUBLISHED,
+      type: job.status === "closed" ? EMAIL_TYPES.RECRUITER_JOB_EXPIRED : EMAIL_TYPES.RECRUITER_JOB_PUBLISHED,
       data: { name: req.user.name, jobTitle: job.title, companyName: job.company },
-      dedupeKey: `email-job-status:${job._id}:${status}:${job.updatedAt?.getTime?.() || Date.now()}`,
+      dedupeKey: `email-job-status:${job._id}:${job.status}:${job.updatedAt?.getTime?.() || Date.now()}`,
     });
 
     res.json({
@@ -302,9 +307,9 @@ exports.getMyJobs = async (req, res) =>
       });
     }
 
-    const jobs = await Job.find({
+    const jobs = await Job.find(tenantFilter(req, {
       postedBy: req.user._id,
-    }).sort({ createdAt: -1 });
+    })).sort({ createdAt: -1 });
 
     res.json({
       success: true,
@@ -326,7 +331,7 @@ exports.getMyJobById = async (req, res) => {
     if (!mongoose.isValidObjectId(req.params.id)) {
       return res.status(400).json({ success: false, message: "Invalid job ID" });
     }
-    const job = await Job.findOne({ _id: req.params.id, postedBy: req.user._id });
+    const job = await Job.findOne(tenantFilter(req, { _id: req.params.id, postedBy: req.user._id }));
     if (!job) return res.status(404).json({ success: false, message: "Job not found" });
     res.json({ success: true, data: job });
   } catch (error) {
@@ -354,12 +359,12 @@ exports.updateJobStatus = async (req, res) =>
       });
     }
 
-    if (status === "active" && !(await canPublish(req.user._id))) {
+    if (status === "active" && !(await canPublish(req.user._id, getTenantId(req)))) {
       return rejectUnverifiedPublish(res);
     }
 
     const job = await Job.findOneAndUpdate(
-      { _id: req.params.id, postedBy: req.user._id },
+      tenantFilter(req, { _id: req.params.id, postedBy: req.user._id }),
       { status },
       { new: true }
     );

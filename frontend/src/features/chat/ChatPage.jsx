@@ -172,10 +172,10 @@ const ChatPage = () => {
             toast({ title: "Could not delete message", description: requestError instanceof Error ? requestError.message : "Unknown error", variant: "destructive" });
         }
     };
-    return (<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex h-[calc(100vh-10rem)] overflow-hidden rounded-xl border border-border bg-card">
+    return (<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex h-[calc(100vh-10rem)] overflow-hidden rounded-lg border border-border bg-card shadow-sm">
       <div className={cn("w-80 shrink-0 border-r border-border flex flex-col", showSidebar ? "" : "hidden md:flex")}>
         <div className="p-4 border-b border-border">
-          <h2 className="font-display font-bold mb-3">Messages</h2>
+          <h2 className="font-display font-semibold mb-3">Messages</h2>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"/>
             <Input placeholder="Search conversations..." value={search} onChange={(event) => setSearch(event.target.value)} className="pl-10"/>
@@ -185,9 +185,9 @@ const ChatPage = () => {
           {filtered.map((conversation) => {
             const other = conversation.participants.find((participant) => participant._id !== currentUserId);
             const online = other ? onlineUsers.includes(other._id) : false;
-            return (<button key={conversation._id} onClick={() => { setSelectedId(conversation._id); setShowSidebar(false); }} className={cn("flex w-full items-start gap-3 p-4 text-left transition-colors hover:bg-muted/50", selectedId === conversation._id && "bg-muted/50")}>
+            return (<button key={conversation._id} onClick={() => { setSelectedId(conversation._id); setShowSidebar(false); }} className={cn("flex w-full items-start gap-3 p-4 text-left transition-colors hover:bg-secondary/50", selectedId === conversation._id && "bg-secondary/70")}>
                 <div className="relative">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">{other?.name.charAt(0)}</div>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-md bg-secondary text-xs font-semibold text-foreground">{other?.name.charAt(0)}</div>
                   {online && <Circle className="absolute -bottom-0.5 -right-0.5 h-3 w-3 fill-success text-success"/>}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -207,7 +207,7 @@ const ChatPage = () => {
       <div className={cn("flex flex-1 flex-col", !showSidebar ? "" : "hidden md:flex")}>
         <div className="flex items-center gap-3 border-b border-border p-4">
           <Button variant="ghost" size="sm" className="md:hidden" onClick={() => setShowSidebar(true)}>Back</Button>
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">{otherUser?.name.charAt(0) || "?"}</div>
+          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-secondary text-xs font-semibold text-foreground">{otherUser?.name.charAt(0) || "?"}</div>
           <div>
             <p className="text-sm font-medium">{otherUser?.name || "Select a conversation"}</p>
             <p className={cn("text-xs", isOnline ? "text-success" : "text-muted-foreground")}>{isOnline ? "Online" : "Offline"}</p>
@@ -221,7 +221,7 @@ const ChatPage = () => {
             const senderId = typeof message.sender === "string" ? message.sender : message.sender._id;
             const mine = senderId === currentUserId;
             return (<div key={message._id} className={cn("flex", mine ? "justify-end" : "justify-start")}>
-                  <div className={cn("max-w-[70%] rounded-2xl px-4 py-2.5", mine ? "gradient-primary text-primary-foreground" : "bg-muted")}>
+                  <div className={cn("max-w-[70%] rounded-lg px-4 py-2.5", mine ? "bg-primary text-primary-foreground" : "bg-secondary text-foreground")}>
                     {editingId === message._id ? (<div className="flex items-center gap-2">
                         <Input value={editInput} onChange={(event) => setEditInput(event.target.value)} className="h-8 bg-background text-foreground"/>
                         <Button size="icon" variant="ghost" onClick={() => void saveEdit(message._id)}><Check className="h-4 w-4"/></Button>
@@ -261,7 +261,7 @@ const ChatPage = () => {
             <input ref={fileInputRef} type="file" className="hidden" accept="image/*,.pdf,.doc,.docx" onChange={(event) => void handleAttachment(event.target.files?.[0])}/>
             <Button variant="ghost" size="icon" disabled={!selectedId || uploading} title="Attach file" onClick={() => fileInputRef.current?.click()}><Paperclip className="h-4 w-4"/></Button>
             <Input placeholder="Type a message..." value={input} disabled={!selectedId} onChange={(event) => handleTyping(event.target.value)} onKeyDown={(event) => event.key === "Enter" && sendMessage()} className="flex-1"/>
-            <Button onClick={sendMessage} disabled={(!input.trim() && !pendingAttachments.length) || !selectedId} className="gradient-primary border-0" size="icon"><Send className="h-4 w-4"/></Button>
+            <Button onClick={sendMessage} disabled={(!input.trim() && !pendingAttachments.length) || !selectedId} size="icon"><Send className="h-4 w-4"/></Button>
           </div>
         </div>
       </div>

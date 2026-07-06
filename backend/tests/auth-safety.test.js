@@ -26,5 +26,8 @@ test("safe auth DTO excludes credentials and reset fields", () => {
     role: user.role,
     isActive: true,
     isVerified: false,
+    organizationId: null,
+    currentOrganization: null,
+    organizations: [],
   });
 });

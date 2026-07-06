@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 
 const conversationSchema = new mongoose.Schema(
   {
+    organizationId: { type: mongoose.Schema.Types.ObjectId, ref: "Organization", default: null, index: true },
     participants: {
       type: [{ type: mongoose.Schema.Types.ObjectId, ref: "User", required: true }],
       validate: [(value) => value.length === 2, "A conversation requires two participants"],
@@ -21,6 +22,6 @@ const conversationSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-conversationSchema.index({ participants: 1, lastMessageAt: -1 });
+conversationSchema.index({ organizationId: 1, participants: 1, lastMessageAt: -1 });
 
 module.exports = mongoose.model("Conversation", conversationSchema);

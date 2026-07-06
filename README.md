@@ -64,6 +64,12 @@ Notifications are persisted in MongoDB, delivered in real time over Socket.IO pe
 
 Supported events include application submission/view/status changes, interview/offer/rejection updates, candidate withdrawal, candidate/recruiter messages, recruiter registration and verification review, job moderation, account updates, failed uploads, and system/admin alert types.
 
+## Multi-Tenant SaaS Organizations
+
+OpportunityX now includes an Organization module for company-isolated recruiting workspaces. Users can belong to multiple organizations, carry a `currentOrganization`, and company-owned documents include `organizationId` with compound indexes for tenant-scoped queries.
+
+Organization APIs are mounted at `/api/organizations` and support profile CRUD, member invitations, role changes, suspension/removal, ownership transfer, branding, settings, and public career pages through `/api/public/careers/:slug`. Existing candidate/recruiter/admin roles remain backward compatible; organization roles add owner/admin/recruiter/hiring manager/interviewer/viewer permission checks for tenant resources.
+
 ## Interview Management
 
 OpportunityX includes an enterprise interview lifecycle module for HR, technical, managerial, behavioral, final, and custom interviews. Recruiters can schedule, reschedule, cancel, duplicate, score, and collect feedback for interviews with interview modes, duration, timezone, meeting links, notifications, email updates, Socket.IO events, and ICS calendar export.

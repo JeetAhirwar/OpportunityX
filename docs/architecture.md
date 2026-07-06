@@ -35,6 +35,24 @@ silently masking broken links.
 The existing controller behavior is intentionally preserved. New business
 logic should move into `src/services` as controllers become more complex.
 
+## Multi-tenancy
+
+Organizations are the tenant root. The backend resolves organization context
+through `organization.middleware.js`, verifies active membership, and then
+checks permission middleware against the role matrix in
+`constants/organization.js`. Legacy platform roles remain intact for route
+compatibility, while organization roles control tenant data access.
+
+All company-owned models include `organizationId` and compound indexes that
+match recruiter dashboards, applicant management, notifications, interviews,
+messaging, notes, reports, and career-page reads. New tenant-aware queries
+should use `tenantFilter(req, baseFilter)` or an equivalent repository method
+so object ownership and organization ownership are enforced together.
+
+Public career pages are intentionally slug-based at `/api/public/careers/:slug`
+and the organization settings model already reserves custom-domain fields for
+`careers.company.com` or `jobs.company.com` routing without a schema rewrite.
+
 ## Interview management
 
 Interview management is split across `Interview` persistence,

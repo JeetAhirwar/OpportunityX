@@ -137,7 +137,7 @@ const PostJob = () => {
       {/* Steps */}
       <div className="flex items-center gap-2">
         {steps.map((s, i) => (<div key={s} className="flex items-center gap-2">
-            <button onClick={() => setStep(i)} className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-colors ${i <= step ? "gradient-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>{i + 1}</button>
+            <button onClick={() => setStep(i)} className={`flex h-8 w-8 items-center justify-center rounded-md text-xs font-bold transition-colors ${i <= step ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>{i + 1}</button>
             <span className={`hidden text-sm sm:inline ${i <= step ? "font-medium" : "text-muted-foreground"}`}>{s}</span>
             {i < steps.length - 1 && <div className={`h-px w-8 ${i < step ? "bg-primary" : "bg-border"}`}/>}
           </div>))}
@@ -260,7 +260,7 @@ const PostJob = () => {
         </Button>
         <div className="flex gap-2">
           {step === 3 && <Button variant="outline" onClick={() => handleSubmit(true)} disabled={saving}><Save className="mr-2 h-4 w-4"/> Save Draft</Button>}
-          {step < 3 ? (<Button onClick={() => setStep(step + 1)} className="gradient-primary border-0">Next <ArrowRight className="ml-2 h-4 w-4"/></Button>) : (<Button onClick={() => handleSubmit(false)} disabled={saving || verificationStatus !== "verified"} className="gradient-primary border-0"><Send className="mr-2 h-4 w-4"/> {isEditing ? "Update & Publish" : "Publish Job"}</Button>)}
+          {step < 3 ? (<Button onClick={() => setStep(step + 1)}>Next <ArrowRight className="ml-2 h-4 w-4"/></Button>) : (<Button onClick={() => handleSubmit(false)} disabled={saving || verificationStatus !== "verified"}><Send className="mr-2 h-4 w-4"/> {isEditing ? "Update & Publish" : "Publish Job"}</Button>)}
         </div>
       </div>
     </motion.div>);

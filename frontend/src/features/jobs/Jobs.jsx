@@ -132,15 +132,15 @@ const Jobs = () => {
     return (<div className="min-h-screen bg-background">
       <SEOHead title="Browse Jobs - OpportunityX" description="Find your next career opportunity. Search jobs by location, salary, type, and experience level." canonical="https://opportunityx.com/jobs"/>
       <Navbar />
-      <section className="relative overflow-hidden border-b border-border/70 bg-card/50 py-8 backdrop-blur">
-        <div className="surface-grid pointer-events-none absolute inset-0 opacity-50"/>
+      <section className="relative overflow-hidden border-b border-border/80 bg-card py-8">
+        <div className="surface-grid pointer-events-none absolute inset-0 opacity-25"/>
         <div className="container mx-auto px-4">
           <div className="relative mb-6">
             <p className="text-xs font-semibold uppercase text-primary">Opportunity search</p>
-            <h1 className="mt-1 font-display text-3xl font-bold">Browse premium roles</h1>
+            <h1 className="mt-1 font-display text-3xl font-semibold">Browse premium roles</h1>
             <p className="mt-2 text-sm text-muted-foreground">Search real open roles from OpportunityX recruiters.</p>
           </div>
-          <div className="glass-strong relative flex flex-col gap-3 rounded-lg p-3 md:flex-row">
+          <div className="relative flex flex-col gap-3 rounded-lg border border-border bg-background p-3 shadow-sm md:flex-row">
             <div className="relative flex-1"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"/><Input placeholder="Job title, keyword, or company" value={searchQuery} onChange={(event) => { setSearchQuery(event.target.value); setPage(1); }} className="pl-10"/></div>
             <div className="relative flex-1"><MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"/><Input placeholder="City, state, or remote" value={locationQuery} onChange={(event) => { setLocationQuery(event.target.value); setPage(1); }} className="pl-10"/></div>
             <Button onClick={() => void refetch()} disabled={isFetching}>Search</Button>
@@ -160,13 +160,13 @@ const Jobs = () => {
 
       <div className="container mx-auto px-4 py-8">
         <div className="flex gap-8">
-          <aside className="hidden w-72 shrink-0 md:block"><div className="premium-surface sticky top-24 rounded-lg p-5"><FilterSidebar /></div></aside>
+          <aside className="hidden w-72 shrink-0 md:block"><div className="sticky top-24 rounded-lg border border-border bg-card p-5 shadow-sm"><FilterSidebar /></div></aside>
           <div className="flex-1 space-y-4">
-            {isLoading && Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} className="h-48 w-full rounded-xl"/>)}
-            {isError && <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-8 text-center"><p className="font-medium">Unable to load jobs</p><p className="mt-1 text-sm text-muted-foreground">{error instanceof Error ? error.message : "Please try again."}</p><Button className="mt-4" variant="outline" onClick={() => void refetch()}>Try Again</Button></div>}
+            {isLoading && Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} className="h-48 w-full rounded-lg"/>)}
+            {isError && <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-8 text-center"><p className="font-medium">Unable to load jobs</p><p className="mt-1 text-sm text-muted-foreground">{error instanceof Error ? error.message : "Please try again."}</p><Button className="mt-4" variant="outline" onClick={() => void refetch()}>Try Again</Button></div>}
             {!isLoading && !isError && jobs.length === 0 && <div className="py-16 text-center"><p className="text-muted-foreground">No jobs match your search criteria.</p><Button variant="link" onClick={clearFilters}>Clear all filters</Button></div>}
             {!isLoading && !isError && jobs.map((job, index) => (<motion.div key={job._id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.03 }}>
-                <Card className="group transition-all hover:-translate-y-1 hover:border-primary/35 hover:shadow-xl">
+                <Card className="group transition-colors hover:border-primary/35">
                   <CardContent className="p-5">
                     <div className="flex items-start gap-4">
                       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 font-display text-sm font-bold text-primary">{companyInitials(job.company)}</div>
@@ -176,7 +176,7 @@ const Jobs = () => {
                           <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-muted-foreground hover:text-primary" onClick={() => void handleSave(job)} disabled={toggleSave.isPending}>{savedIds.has(job._id) ? <Bookmark className="h-4 w-4 fill-current"/> : <BookmarkPlus className="h-4 w-4"/>}</Button>
                         </div>
                         <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground"><span className="flex items-center gap-1"><MapPin className="h-3 w-3"/> {job.location || "Location not specified"}</span><span className="flex items-center gap-1"><DollarSign className="h-3 w-3"/> {formatSalary(job)}</span><span className="flex items-center gap-1"><Clock className="h-3 w-3"/> {safeDateDistance(job.createdAt)}</span></div>
-                        <div className="mt-3 flex flex-wrap items-center gap-2"><Badge variant="secondary" className="text-xs capitalize">{job.jobType || "Role type TBD"}</Badge><Badge variant="secondary" className="text-xs capitalize">{job.experienceLevel || "Experience TBD"}</Badge><Badge className="bg-success/10 text-success hover:bg-success/20 text-xs capitalize">{formatWorkMode(job.workMode)}</Badge>{(job.skills || []).map((skill) => <Badge key={skill} variant="outline" className="text-xs">{skill}</Badge>)}</div>
+                        <div className="mt-3 flex flex-wrap items-center gap-2"><Badge variant="secondary" className="text-xs capitalize">{job.jobType || "Role type TBD"}</Badge><Badge variant="secondary" className="text-xs capitalize">{job.experienceLevel || "Experience TBD"}</Badge><Badge className="border-success/20 bg-success/10 text-success text-xs capitalize">{formatWorkMode(job.workMode)}</Badge>{(job.skills || []).map((skill) => <Badge key={skill} variant="outline" className="text-xs">{skill}</Badge>)}</div>
                       </div>
                     </div>
                     <div className="mt-4 flex justify-end"><Button size="sm" className="text-xs" asChild><Link to={`/jobs/${job._id}`}>View & Apply</Link></Button></div>

@@ -1,5 +1,36 @@
 # Database Design
 
+## Organization
+
+`Organization` is the tenant root for company workspaces.
+
+Key fields:
+
+- `name`, `slug`, `logo`, `website`, `industry`, `companySize`, `country`,
+  `timezone`.
+- `subscriptionPlan`, `subscriptionStatus`.
+- `owner`, `members`, and `invitations` for owner/admin/recruiter/hiring
+  manager/interviewer/viewer access.
+- `settings` for public application behavior, default job status, email sender
+  names, and future custom domains.
+- `branding` for primary/secondary colors, career-page copy, email branding,
+  and company description.
+
+Indexes cover slug uniqueness, owner lookups, active member lookups,
+invitation lookups, subscription filters, and future custom domains.
+
+## Tenant Scoping
+
+Company-owned collections now include `organizationId` and compound indexes
+around common access patterns. This includes jobs, applications,
+notifications, interviews, messages, conversations, recruiter notes, reports,
+saved jobs, profiles, parsed resumes, companies, and users.
+
+The backend resolves organization context from `x-organization-id`,
+route/query parameters, or the authenticated user's current organization.
+Repository/controller filters append `organizationId` before reading or
+mutating recruiter-owned resources, preventing cross-tenant object access.
+
 ## ParsedResume
 
 `ParsedResume` stores backend-only candidate resume intelligence generated from
