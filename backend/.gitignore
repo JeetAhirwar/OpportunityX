@@ -5,6 +5,10 @@ src/uploads/*
 coverage/
 *.log
 
-# Tests
+# Tests (test files are not part of the production repository)
 **/tests/
 **/test/
+**/*.test.js
+**/*.test.jsx
+**/*.test.ts
+**/*.test.tsx

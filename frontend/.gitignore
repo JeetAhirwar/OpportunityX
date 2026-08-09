@@ -4,3 +4,12 @@ dist/
 .env.*
 !.env.example
 *.log
+
+# Tests and coverage (test files are not part of the production repository)
+src/test/
+tests/
+**/*.test.js
+**/*.test.jsx
+**/*.test.ts
+**/*.test.tsx
+coverage/

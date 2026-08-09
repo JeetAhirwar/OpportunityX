@@ -21,6 +21,15 @@ dist-ssr
 backend/src/uploads/*
 !backend/src/uploads/.gitkeep
 
+# Tests and coverage (test files are not part of the production repository)
+**/tests/
+**/test/
+**/*.test.js
+**/*.test.jsx
+**/*.test.ts
+**/*.test.tsx
+coverage/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -17,7 +17,6 @@ middlewares, configuration, constants, services, and utilities.
 npm install
 npm run dev
 npm start
-npm test
 ```
 
 ## Environment
