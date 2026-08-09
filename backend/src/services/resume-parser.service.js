@@ -1,6 +1,6 @@
 const fs = require("fs/promises");
 const path = require("path");
-const pdfParse = require("pdf-parse");
+const { PDFParse } = require("pdf-parse");
 const mammoth = require("mammoth");
 const { sanitizeText } = require("./ai.service");
 
@@ -66,9 +66,9 @@ const extractSkills = (text) => {
   return [...new Set([...sectionSkills, ...tech].map((skill) => skill.trim()).filter(Boolean))].slice(0, 80);
 };
 
-const parsePdf = async (filePath) => {
-  const buffer = await fs.readFile(filePath);
-  const result = await pdfParse(buffer);
+const parsePdf = async (buffer) => {
+  const pdf = new PDFParse(new Uint8Array(buffer));
+  const result = await pdf.getText();
   return result.text || "";
 };
 
@@ -77,15 +77,25 @@ const parseDocx = async (filePath) => {
   return result.value || "";
 };
 
-const extractTextFromFile = async ({ filePath, mimeType = "" }) => {
+const parseDocxBuffer = async (buffer) => {
+  const result = await mammoth.extractRawText({ buffer });
+  return result.value || "";
+};
+
+const extractTextFromFile = async ({ filePath, buffer, mimeType = "" }) => {
+  if (buffer) {
+    if (mimeType === "application/pdf") return parsePdf(buffer);
+    if (mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") return parseDocxBuffer(buffer);
+    throw new Error("Unsupported resume file type");
+  }
   const extension = path.extname(filePath).toLowerCase();
-  if (mimeType === "application/pdf" || extension === ".pdf") return parsePdf(filePath);
+  if (mimeType === "application/pdf" || extension === ".pdf") return parsePdf(await fs.readFile(filePath));
   if (mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || extension === ".docx") return parseDocx(filePath);
   throw new Error("Unsupported resume file type");
 };
 
-const parseResumeFile = async ({ filePath, mimeType }) => {
-  const rawText = sanitizeText(normalizeWhitespace(await extractTextFromFile({ filePath, mimeType })), MAX_RAW_TEXT);
+const parseResumeFile = async ({ filePath, buffer, mimeType }) => {
+  const rawText = sanitizeText(normalizeWhitespace(await extractTextFromFile({ filePath, buffer, mimeType })), MAX_RAW_TEXT);
   const parsedData = {
     name: extractName(rawText),
     email: extractEmail(rawText),

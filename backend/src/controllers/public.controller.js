@@ -13,7 +13,16 @@ exports.getPublicProfile = async (req, res) => {
 
 exports.getPublicJob = async (req, res) => {
   try {
-    const job = await Job.findById(req.params.id).populate("postedBy", "name");
+    const job = await Job.findOne({
+      _id: req.params.id,
+      status: "active",
+      isExpired: { $ne: true },
+      $or: [
+        { deadline: { $exists: false } },
+        { deadline: null },
+        { deadline: { $gte: new Date() } },
+      ],
+    }).populate("postedBy", "name");
     if (!job) return res.status(404).json({ message: "Job not found" });
     res.json(job);
   } catch (error) {

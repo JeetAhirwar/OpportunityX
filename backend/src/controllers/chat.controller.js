@@ -6,6 +6,8 @@ const {
   markConversationRead,
   startApplicationConversation,
 } = require("../services/chat.service");
+const cloudinaryService = require("../services/cloudinary.service");
+const cloudinaryConfig = require("../config/cloudinary");
 
 const fail = (res, error) =>
   res.status(error.statusCode || 500).json({ success: false, message: error.message });
@@ -67,10 +69,16 @@ exports.markRead = async (req, res) => {
 exports.uploadAttachment = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ success: false, message: "Attachment is required" });
+    const uploaded = await cloudinaryService.uploadBuffer({
+      buffer: req.file.buffer,
+      mimeType: req.file.mimetype,
+      folder: cloudinaryConfig.folders.chat,
+      resourceType: "raw",
+    });
     res.json({
       success: true,
       attachment: {
-        url: `/uploads/chat/${req.file.filename}`,
+        url: uploaded.secureUrl,
         name: req.file.originalname,
         mimeType: req.file.mimetype,
         size: req.file.size,

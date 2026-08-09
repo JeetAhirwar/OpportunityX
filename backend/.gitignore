@@ -4,3 +4,7 @@ src/uploads/*
 !src/uploads/.gitkeep
 coverage/
 *.log
+
+# Tests
+**/tests/
+**/test/

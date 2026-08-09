@@ -2,6 +2,7 @@ const Organization = require("../models/organization.model");
 const Job = require("../models/job.model");
 const organizationRepository = require("../repositories/organization.repository");
 const organizationService = require("../services/organization.service");
+const cleanupService = require("../services/cleanup.service");
 
 exports.createOrganization = async (req, res) => {
   try {
@@ -29,8 +30,12 @@ exports.updateOrganization = async (req, res) => {
 };
 
 exports.deleteOrganization = async (req, res) => {
-  await organizationRepository.deleteById(req.organization._id);
-  return res.json({ success: true, message: "Organization deleted" });
+  try {
+    const cleaned = await cleanupService.deleteOrganizationAndRelated(req.organization._id);
+    return res.json({ success: true, message: "Organization deleted", data: { cleaned } });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
 };
 
 exports.inviteMember = async (req, res) => {

@@ -4,6 +4,8 @@ const generateToken = require("../utils/generateToken");
 const env = require("../config/env");
 const emailService = require("../services/email.service");
 const notificationService = require("../services/notification.service");
+const tokenService = require("../services/token.service");
+const { extractToken } = require("../middlewares/auth.middleware");
 const { TYPES } = notificationService;
 const { EMAIL_TYPES } = emailService;
 
@@ -58,7 +60,7 @@ exports.register = async (req, res) => {
       });
     }
     return res.status(201).json({
-      token: generateToken(user._id),
+      token: generateToken(user),
       user: safeUser(user),
     });
   } catch (error) {
@@ -84,7 +86,7 @@ exports.login = async (req, res) => {
     await user.save({ validateBeforeSave: false });
 
     return res.json({
-      token: generateToken(user._id),
+      token: generateToken(user),
       user: safeUser(user),
     });
   } catch (error) {
@@ -96,7 +98,11 @@ exports.me = async (req, res) => {
   return res.json({ user: safeUser(req.user) });
 };
 
-exports.logout = async (_req, res) => {
+exports.logout = async (req, res) => {
+  const token = extractToken(req);
+  if (token) {
+    await tokenService.revokeToken(token);
+  }
   return res.json({ success: true, message: "Logged out successfully" });
 };
 
@@ -146,6 +152,7 @@ exports.resetPassword = async (req, res) => {
     user.password = req.body.password;
     user.resetPasswordToken = null;
     user.resetPasswordExpires = null;
+    user.tokenVersion = (user.tokenVersion || 0) + 1;
     await user.save();
     emailService.send({
       to: user.email,

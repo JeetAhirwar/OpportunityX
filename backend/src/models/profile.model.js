@@ -41,6 +41,21 @@ const profileSchema = new mongoose.Schema(
             default: "",
         },
 
+        resumePublicId: {
+            type: String,
+            default: "",
+        },
+
+        resumeResourceType: {
+            type: String,
+            default: "",
+        },
+
+        resumeFormat: {
+            type: String,
+            default: "",
+        },
+
         name: {
             type: String,
             required: [true, "Name is required"],

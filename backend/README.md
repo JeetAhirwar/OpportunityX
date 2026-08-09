@@ -26,6 +26,13 @@ Copy `.env.example` to `.env`. Required runtime values are `MONGODB_URI` and
 `JWT_SECRET`. Replace every placeholder before production use. `MONGO_URI`
 remains accepted temporarily for compatibility with older local files.
 
+Resume and chat attachment files are stored in Cloudinary. Configure
+`CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET` in
+the production environment (Render); the backend fails clearly at startup in
+production when they are missing. Uploaded files never write to the Render
+filesystem. Legacy `/uploads/...` resume URLs from older records remain
+supported for reading and are served by the existing static uploads route.
+
 The API defaults to port `8000`. Allowed browser origins are configured as a
 comma-separated `CORS_ORIGIN` list. Optional `OPENAI_API_KEY` and `AI_MODEL`
 enable `/api/ai` features; missing AI credentials produce unavailable

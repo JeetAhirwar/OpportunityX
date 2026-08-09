@@ -4,6 +4,16 @@ const Company = require("../models/company.model");
 const emailService = require("../services/email.service");
 const { EMAIL_TYPES } = emailService;
 const { getTenantId, tenantFilter } = require("../utils/tenant");
+const cleanupService = require("../services/cleanup.service");
+const viewCounter = require("../utils/view-counter");
+
+const isPubliclyVisibleJob = (job) =>
+  Boolean(
+    job &&
+      job.status === "active" &&
+      !job.isExpired &&
+      (!job.deadline || new Date(job.deadline) >= new Date())
+  );
 
 const listFilter = (value) =>
   String(value || "")
@@ -114,7 +124,7 @@ exports.deleteJob = async (req, res) =>
 {
   try
   {
-    const job = await Job.findOneAndDelete({
+    const job = await Job.findOne({
       ...tenantFilter(req),
       _id: req.params.id,
       postedBy: req.user._id,
@@ -127,6 +137,9 @@ exports.deleteJob = async (req, res) =>
         message: "Job not found",
       });
     }
+
+    const cleaned = await cleanupService.deleteJobAndRelated(job._id);
+
     emailService.send({
       to: req.user.email,
       type: job.status === "closed" ? EMAIL_TYPES.RECRUITER_JOB_EXPIRED : EMAIL_TYPES.RECRUITER_JOB_PUBLISHED,
@@ -137,6 +150,7 @@ exports.deleteJob = async (req, res) =>
     res.json({
       success: true,
       message: "Job deleted successfully",
+      data: { cleaned },
     });
   } catch (error)
   {
@@ -168,7 +182,15 @@ exports.searchJobs = async (req, res) =>
       sort,
     } = req.query;
 
-    const filter = { status: "active" };
+    const filter = {
+      status: "active",
+      isExpired: { $ne: true },
+      $or: [
+        { deadline: { $exists: false } },
+        { deadline: null },
+        { deadline: { $gte: new Date() } },
+      ],
+    };
 
     // Text search
     if (keyword)
@@ -249,7 +271,7 @@ exports.searchJobs = async (req, res) =>
 
 
 // =============================
-// Get Job By ID (Atomic View Increment)
+// Get Job By ID (Public Visibility + Deduplicated View Count)
 // =============================
 exports.getJobById = async (req, res) =>
 {
@@ -263,11 +285,7 @@ exports.getJobById = async (req, res) =>
       });
     }
 
-    const job = await Job.findByIdAndUpdate(
-      req.params.id,
-      { $inc: { views: 1 } },
-      { new: true }
-    ).populate("postedBy", "name email");
+    const job = await Job.findById(req.params.id).populate("postedBy", "name email");
 
     if (!job)
     {
@@ -275,6 +293,29 @@ exports.getJobById = async (req, res) =>
         success: false,
         message: "Job not found",
       });
+    }
+
+    const posterId = job.postedBy?._id ? String(job.postedBy._id) : String(job.postedBy);
+    const isOwner = req.user && String(req.user._id) === posterId;
+    const isAdmin = req.user?.role === "admin";
+    const publiclyVisible = isPubliclyVisibleJob(job);
+
+    if (!publiclyVisible && !isOwner && !isAdmin)
+    {
+      return res.status(404).json({
+        success: false,
+        message: "Job not found",
+      });
+    }
+
+    if (publiclyVisible && !isOwner && !isAdmin)
+    {
+      const clientIp = req.ip || req.socket?.remoteAddress || "";
+      if (viewCounter.recordView(`${clientIp}:${job._id}`))
+      {
+        await Job.updateOne({ _id: job._id }, { $inc: { views: 1 } });
+        job.views = (job.views || 0) + 1;
+      }
     }
 
     res.json({
@@ -400,9 +441,18 @@ exports.getFeaturedJobs = async (_req, res) =>
 {
   try
   {
+    const publicFilter = {
+      isExpired: { $ne: true },
+      $or: [
+        { deadline: { $exists: false } },
+        { deadline: null },
+        { deadline: { $gte: new Date() } },
+      ],
+    };
     let jobs = await Job.find({
       featured: true,
       status: { $in: ["active", "Published", "published"] },
+      ...publicFilter,
     })
       .sort({ createdAt: -1 })
       .limit(6)
@@ -413,6 +463,7 @@ exports.getFeaturedJobs = async (_req, res) =>
     {
       jobs = await Job.find({
         status: { $in: ["active", "Published", "published"] },
+        ...publicFilter,
       })
         .sort({ createdAt: -1 })
         .limit(6)

@@ -19,6 +19,7 @@ const userSchema = new mongoose.Schema(
     currentOrganization: { type: mongoose.Schema.Types.ObjectId, ref: "Organization", default: null, index: true },
     organizations: [{ type: mongoose.Schema.Types.ObjectId, ref: "Organization" }],
     lastLogin: { type: Date },
+    tokenVersion: { type: Number, default: 0 },
     resetPasswordToken: { type: String, select: false, default: null },
     resetPasswordExpires: { type: Date, select: false, default: null },
   },

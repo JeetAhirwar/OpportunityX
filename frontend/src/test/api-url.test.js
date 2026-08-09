@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createApiUrl } from "@/services/api";
+import { createApiUrl, publicAssetUrl } from "@/services/api";
 describe("API URL construction", () => {
     const productionBaseUrl = "https://opportunityx-6klo.onrender.com/api";
     it("keeps /api in the configured base URL for production auth requests", () => {
@@ -13,5 +13,16 @@ describe("API URL construction", () => {
     });
     it("uses the same convention for localhost", () => {
         expect(createApiUrl("http://localhost:8000/api", "/auth/login")).toBe("http://localhost:8000/api/auth/login");
+    });
+});
+describe("publicAssetUrl", () => {
+    it("returns Cloudinary HTTPS URLs unchanged", () => {
+        const url = "https://res.cloudinary.com/opportunityx/raw/upload/v1/opportunityx/resumes/abc.pdf";
+        expect(publicAssetUrl(url)).toBe(url);
+    });
+    it("still resolves legacy /uploads paths against the API origin", () => {
+        const base = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/api\/?$/, "").replace(/\/$/, "");
+        expect(publicAssetUrl("/uploads/resumes/legacy.pdf")).toBe(`${base}/uploads/resumes/legacy.pdf`);
+        expect(publicAssetUrl("uploads/resumes/legacy.pdf")).toBe(`${base}/uploads/resumes/legacy.pdf`);
     });
 });

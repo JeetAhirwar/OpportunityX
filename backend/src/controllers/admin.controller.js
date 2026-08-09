@@ -5,6 +5,7 @@ const Application = require("../models/application.model");
 const Company = require("../models/company.model");
 const emailService = require("../services/email.service");
 const notificationService = require("../services/notification.service");
+const cleanupService = require("../services/cleanup.service");
 const { TYPES } = notificationService;
 const { EMAIL_TYPES } = emailService;
 
@@ -139,7 +140,9 @@ exports.updateUserStatus = async (req, res) => {
     const target = await User.findById(req.params.id).select(safeUserFields);
     if (!target) return res.status(404).json({ success: false, message: "User not found" });
     if (req.body.isActive === false && await ensureNotLastAdmin(target, res, "suspend")) return;
-    const user = await User.findByIdAndUpdate(req.params.id, { isActive: req.body.isActive }, { new: true }).select(safeUserFields);
+    const update = { $set: { isActive: req.body.isActive } };
+    if (req.body.isActive === false) update.$inc = { tokenVersion: 1 };
+    const user = await User.findByIdAndUpdate(req.params.id, update, { new: true }).select(safeUserFields);
     await notificationService.createNotification({
       io: req.app.get("io"),
       recipient: user._id,
@@ -188,8 +191,8 @@ exports.deleteUser = async (req, res) => {
     const target = await User.findById(req.params.id).select(safeUserFields);
     if (!target) return res.status(404).json({ success: false, message: "User not found" });
     if (await ensureNotLastAdmin(target, res, "delete")) return;
-    const user = await User.findByIdAndDelete(req.params.id);
-    res.json({ success: true, message: "User deleted" });
+    const cleaned = await cleanupService.deleteUserAndRelated(req.params.id);
+    res.json({ success: true, message: "User deleted", data: { cleaned } });
   } catch (error) { res.status(500).json({ success: false, message: error.message }); }
 };
 

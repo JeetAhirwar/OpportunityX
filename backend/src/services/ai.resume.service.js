@@ -4,19 +4,78 @@ const { jsonPrompt, sanitizeText } = require("./ai.service");
 const { normalizeResumeAnalysis } = require("./ai.response-normalizer");
 const { parseResumeFile } = require("./resume-parser.service");
 
-const resumeAbsolutePath = (resumeUrl) => path.join(__dirname, "..", resumeUrl.replace(/^\/+/, ""));
+const UPLOADS_ROOT = path.resolve(__dirname, "..", "uploads");
 
-const upsertParsedResumeFromUpload = async ({ candidateId, resumeUrl, file }) => {
-  const filePath = file?.path || resumeAbsolutePath(resumeUrl);
-  const { rawText, parsedData } = await parseResumeFile({ filePath, mimeType: file?.mimetype });
+const URL_ENCODED_TRAVERSAL = /%2e|%2f|%5c|%c0/i;
+const CLOUDINARY_HOST_RE = /^https:\/\/(?:[\w-]+\.)*res\.cloudinary\.com\/.+$/i;
+const MAX_RESUME_BYTES = 10 * 1024 * 1024;
+
+const mimeTypeFromUrl = (url) => {
+  const pathPart = url.split(/[?#]/)[0];
+  if (/\.docx$/i.test(pathPart)) return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  return "application/pdf";
+};
+
+const fetchResumeBuffer = async (url) => {
+  if (!CLOUDINARY_HOST_RE.test(url)) throw new Error("Unsupported resume source");
+  const response = await fetch(url);
+  if (!response.ok) throw new Error("Failed to download resume");
+  const contentLength = Number(response.headers.get("content-length") || 0);
+  if (contentLength > MAX_RESUME_BYTES) throw new Error("Resume file is too large");
+  const arrayBuffer = await response.arrayBuffer();
+  if (arrayBuffer.byteLength > MAX_RESUME_BYTES) throw new Error("Resume file is too large");
+  return Buffer.from(arrayBuffer);
+};
+
+const assertInsideUploads = (absolutePath) => {
+  const root = path.resolve(UPLOADS_ROOT);
+  const target = path.resolve(absolutePath);
+  const normalizeKey = (p) => (process.platform === "win32" ? p.toLowerCase() : p);
+  const rootKey = normalizeKey(root);
+  const targetKey = normalizeKey(target);
+  if (targetKey !== rootKey && !targetKey.startsWith(rootKey + path.sep)) {
+    throw new Error("Resume path must be inside the uploads directory");
+  }
+};
+
+const resolveResumePath = (value) => {
+  const raw = String(value || "").trim();
+  if (!raw) throw new Error("Resume path is required");
+
+  if (URL_ENCODED_TRAVERSAL.test(raw)) {
+    throw new Error("Resume path is invalid");
+  }
+
+  if (/^[\\/]?uploads[\\/]/i.test(raw)) {
+    const relative = raw.replace(/^[\\/]+/, "").replace(/^uploads[\\/]/i, "");
+    const absolute = path.resolve(UPLOADS_ROOT, relative);
+    assertInsideUploads(absolute);
+    return absolute;
+  }
+
+  if (path.isAbsolute(raw)) {
+    const absolute = path.normalize(raw);
+    assertInsideUploads(absolute);
+    return absolute;
+  }
+
+  const absolute = path.resolve(UPLOADS_ROOT, raw);
+  assertInsideUploads(absolute);
+  return absolute;
+};
+
+const upsertParsedResumeFromUpload = async ({ candidateId, resumeUrl, file, buffer, mimeType, fileName }) => {
+  const sourceBuffer = buffer || file?.buffer;
+  const sourceMimeType = mimeType || file?.mimetype;
+  const { rawText, parsedData } = await parseResumeFile({ buffer: sourceBuffer, mimeType: sourceMimeType });
   return ParsedResume.findOneAndUpdate(
     { candidate: candidateId },
     {
       $set: {
         candidate: candidateId,
         resumeUrl,
-        fileName: file?.originalname || "",
-        mimeType: file?.mimetype || "",
+        fileName: fileName || file?.originalname || "",
+        mimeType: sourceMimeType || "",
         rawText,
         parsedData,
         skills: parsedData.skills || [],
@@ -42,7 +101,16 @@ const ensureParsedResume = async ({ candidateId, profile }) => {
   const existing = await getParsedResume(candidateId, true);
   if (existing || !profile?.resumeUrl) return existing;
   try {
-    const { rawText, parsedData } = await parseResumeFile({ filePath: resumeAbsolutePath(profile.resumeUrl) });
+    const resumeUrl = profile.resumeUrl;
+    let input;
+    if (CLOUDINARY_HOST_RE.test(resumeUrl)) {
+      input = { buffer: await fetchResumeBuffer(resumeUrl), mimeType: mimeTypeFromUrl(resumeUrl) };
+    } else if (/^https?:\/\//i.test(resumeUrl)) {
+      return null;
+    } else {
+      input = { filePath: resolveResumePath(resumeUrl) };
+    }
+    const { rawText, parsedData } = await parseResumeFile(input);
     return ParsedResume.findOneAndUpdate(
       { candidate: candidateId },
       {
@@ -119,6 +187,9 @@ Return {"atsScore":0,"strengths":[],"weaknesses":[],"missingKeywords":[],"format
 module.exports = {
   analyzeResume,
   ensureParsedResume,
+  fetchResumeBuffer,
   getParsedResume,
+  mimeTypeFromUrl,
+  resolveResumePath,
   upsertParsedResumeFromUpload,
 };
