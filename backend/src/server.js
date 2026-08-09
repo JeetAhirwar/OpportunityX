@@ -6,6 +6,9 @@ const { Server } = require("socket.io");
 const socketAuth = require("./socket/socketAuth");
 const socketHandler = require("./socket/socket");
 const logger = require("./utils/logger");
+const dns = require("node:dns");
+
+dns.setServers(["8.8.8.8", "1.1.1.1"]);
 
 const startServer = async () => {
   try {
